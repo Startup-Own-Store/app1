@@ -1,0 +1,74 @@
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+dist/
+expo-env.d.ts
+
+# Android
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/.idea/
+android/.cxx/
+android/.settings/
+android/.externalNativeBuild/
+
+# Build outputs
+build/
+!build/generated/ios/
+
+# Misc
+.env
+.env.*
+*.keystore
+*.jks
+*.p12
+*.key
+*.pem
+*.crt
+*.der
+
+# VSCode
+.vscode/
+
+# Mac
+*.DS_Store
+
+# Windows
+*.exe
+*.dll
+*.pdb
+*.db
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# Metro
+metro-cache/
+.metro-health-check*
+
+# Test coverage
+coverage/
+
+# Others
+*.log
+
+# Ignore debug keystore
+android/app/debug.keystore
+
+app.zip

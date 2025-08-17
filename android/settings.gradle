@@ -1,0 +1,23 @@
+pluginManagement {
+    def reactNativeAndroidDir = new File(
+        ["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(),
+        "../android"
+    )
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+        maven {
+            url(reactNativeAndroidDir)
+        }
+    }
+    includeBuild("../node_modules/react-native-gradle-plugin")
+}
+
+rootProject.name = 'OwnStore'
+
+include(":app")
+
+// ✅ Correct autolinking entry point for Expo SDK 50+
+// apply from: file("../node_modules/expo-modules-autolinking/scripts/android/autolinking_implementation.gradle")
+// useExpoModules()

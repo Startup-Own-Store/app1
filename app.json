@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "OwnStore",
+    "slug": "ownstore",
+    "scheme": "ownstore",
+    "owner": "ajay252",
+    "android": {
+      "package": "com.ajay.ownstoredemo",
+      "googleServicesFile": "./android/app/google-services.json"
+    },
+    "ios": {
+      "bundleIdentifier": "com.ajay.ownstoredemo"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "21a51883-465a-43d6-ae71-5328d4ef8818"
+      }
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-dev-client"
+    ]
+  }
+}
