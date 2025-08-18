@@ -25,7 +25,7 @@ const DeliveryLoginScreen = () => {
 
     const { error } = await supabase.auth.signInWithPassword({
       email: email,
-      password: password,
+      password: password
     });
 
     if (error) {

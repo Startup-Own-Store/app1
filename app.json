@@ -19,10 +19,7 @@
     "plugins": [
       "expo-web-browser",
       "expo-dev-client",
-      "expo-location",
-      {
-        "locationAlwaysAndWhenInUsePermission": "Allow OwnStore to use your location."
-      }
+      "expo-location"
     ]
   }
 }
