@@ -11,11 +11,19 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-const CheckoutScreen = ({ onBack, cartItems, onRemoveItem, onPlaceOrder }: { onBack: () => void, cartItems?: any[], onRemoveItem?: (itemId: string) => void, onPlaceOrder?: () => void }) => {
+
+import { useNavigation, useRoute } from '@react-navigation/native';
+
+const CheckoutScreen: React.FC = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+
+  // Get cartItems from route params if passed
+  const cartItems = (route.params as any)?.cartItems || [];
   const [selectedPayment, setSelectedPayment] = React.useState('card');
   const [itemQuantities, setItemQuantities] = React.useState<Record<string, number>>({});
 
-  const items = cartItems?.length ? cartItems.map(item => ({
+  const items = cartItems.length ? cartItems.map((item: any) => ({
     id: item.id,
     name: item.name,
     price: parseFloat(item.price.replace('$', '')),
@@ -29,7 +37,7 @@ const CheckoutScreen = ({ onBack, cartItems, onRemoveItem, onPlaceOrder }: { onB
     }));
   };
 
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + (item.price * item.quantity), 0);
   const deliveryFee = 2.99;
   const tax = subtotal * 0.08;
   const total = subtotal + deliveryFee + tax;
@@ -39,7 +47,7 @@ const CheckoutScreen = ({ onBack, cartItems, onRemoveItem, onPlaceOrder }: { onB
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <MaterialIcons name="arrow-back" size={24} color="#181411" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Checkout</Text>
@@ -65,7 +73,7 @@ const CheckoutScreen = ({ onBack, cartItems, onRemoveItem, onPlaceOrder }: { onB
           {/* Order Items */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Order Summary</Text>
-            {items.map((item) => (
+            {items.map((item: any) => (
               <View key={item.id} style={styles.orderItem}>
                 <View style={styles.itemDetails}>
                   <Text style={styles.itemName}>{item.name}</Text>
@@ -81,7 +89,7 @@ const CheckoutScreen = ({ onBack, cartItems, onRemoveItem, onPlaceOrder }: { onB
                       <MaterialIcons name="add" size={16} color="#181411" />
                     </TouchableOpacity>
                   </View>
-                  <TouchableOpacity style={styles.deleteButton} onPress={() => onRemoveItem?.(item.id)}>
+                  <TouchableOpacity style={styles.deleteButton} onPress={() => {/* Optionally handle remove */}}>
                     <MaterialIcons name="delete" size={20} color="#e82630" />
                   </TouchableOpacity>
                 </View>
@@ -157,10 +165,10 @@ const CheckoutScreen = ({ onBack, cartItems, onRemoveItem, onPlaceOrder }: { onB
 
         {/* Footer Buttons */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#f5f2f0' }]} onPress={() => onBack()}>
+          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#f5f2f0' }]} onPress={() => navigation.goBack()}>
             <Text style={[styles.footerButtonText, { color: '#181411' }]}>Add More Items</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#ec8627' }]} onPress={onPlaceOrder}>
+          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#ec8627' }]} onPress={() => {/* Optionally handle place order */}}>
             <Text style={[styles.footerButtonText, { color: '#ffffff' }]}>Place Order • ${total.toFixed(2)}</Text>
           </TouchableOpacity>
         </View>

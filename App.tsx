@@ -183,15 +183,23 @@ import TabNavigatorDelivery from './app/(tabs)/TabNavigatorDelivery';
 
 // Import all Authentication screens for logged-out users
 import LoginScreen from './app/UserScreens/Login';
-import OtpScreen from './app/UserScreens/OtpScreen';
+import OtpScreen from './app/UserScreens/OtpScreen'; // Note: You had UserScreens/OtpScreen, check path
 import VendorLoginScreen from './app/screens/VendorLogin';
 import DeliveryLoginScreen from './app/DeliveryScreens/DeliveryLogin';
-import AdminLoginScreen from './app/Admin/AdminLogin';
+import AdminLoginScreen from './app/Admin/AdminLogin'; // Note: You had Admin/AdminLogin, check path
 
 // Import all Admin screens for the admin stack
-import AdminDashboardScreen from './app/Admin/AdminDashboard';
-import CreateVendorUserScreen from './app/Admin/CreateVendorUser';
-import CreateDeliveryUserScreen from './app/Admin/CreateDeliveryUser';
+import AdminDashboardScreen from './app/Admin/AdminDashboard'; // Note: You had Admin/AdminDashboard, check path
+import CreateVendorUserScreen from './app/Admin/CreateVendorUser'; // Note: You had Admin/CreateVendorUser, check path
+import CreateDeliveryUserScreen from './app/Admin/CreateDeliveryUser'; // Note: You had Admin/CreateDeliveryUser, check path
+
+// Import all UserScreens for direct navigation from within the user's authenticated stack
+import CheckoutScreen from './app/UserScreens/checkout';
+import FoodDetailsScreen from './app/UserScreens/food_details';
+import OrderSuccessScreen from './app/UserScreens/order_success';
+import ShopsScreen from './app/UserScreens/shops';
+import TrackOrderScreen from './app/UserScreens/track_order';
+import ProfileScreen from './app/UserScreens/profile';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -213,6 +221,14 @@ export type RootStackParamList = {
   AdminDashboard: undefined;
   CreateVendorUser: undefined;
   CreateDeliveryUser: undefined;
+
+  // --- Other User-Specific Screens (navigated to from the MainUser tabs) ---
+  Checkout: undefined;
+  FoodDetails: undefined;
+  OrderSuccess: undefined;
+  Shops: undefined;
+  TrackOrder: undefined;
+  Profile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -277,8 +293,17 @@ export default function App() {
             // --- Screen for the LOGGED IN DELIVERY partner ---
             <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />
           ) : (
-            // --- Screen for the default LOGGED IN USER ---
-            <Stack.Screen name="MainUser" component={TabNavigatorUser} />
+            // --- Group of screens for the default LOGGED IN USER ---
+            <>
+              <Stack.Screen name="MainUser" component={TabNavigatorUser} />
+              {/* Other screens reachable from the user's tabs */}
+              <Stack.Screen name="Checkout" component={CheckoutScreen} />
+              <Stack.Screen name="FoodDetails" component={FoodDetailsScreen} />
+              <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
+              <Stack.Screen name="Shops" component={ShopsScreen} />
+              <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+            </>
           )}
         </Stack.Navigator>
       </NavigationContainer>

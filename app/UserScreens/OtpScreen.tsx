@@ -238,18 +238,20 @@ import {
 } from 'react-native';
 import supabase from '../../SupabaseClient';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
-// Define RootStackParamList locally to avoid import errors
-type RootStackParamList = {
-  OtpScreen: { phone: string };
-};
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+// ✅ Import your central navigation types from App.tsx
+import { RootStackParamList } from '../../App';
+
+// Define the specific types for this screen's route and navigation
 type OtpScreenRouteProp = RouteProp<RootStackParamList, 'OtpScreen'>;
+type OtpScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OtpScreen'>;
 
 const OTPScreen = () => {
-  const navigation = useNavigation();
+  // ✅ Correctly typed navigation hooks
+  const navigation = useNavigation<OtpScreenNavigationProp>();
   const route = useRoute<OtpScreenRouteProp>();
 
-  // ✅ Safely get the phone number from params
   const phone = route.params?.phone;
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -257,7 +259,7 @@ const OTPScreen = () => {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(60);
 
-  // ✅ Add a countdown timer for resending the code
+  // Countdown timer effect
   useEffect(() => {
     if (countdown <= 0) {
       return;
@@ -268,7 +270,7 @@ const OTPScreen = () => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // ✅ Prevent crashes if the phone number is missing
+  // Effect to handle missing phone number
   useEffect(() => {
     if (!phone) {
       Alert.alert('Error', 'Something went wrong. Please try again.', [
@@ -298,14 +300,14 @@ const OTPScreen = () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
-        phone: phone!, // We can use '!' because we check if phone exists
+        phone: phone!,
         token: enteredOtp,
         type: 'sms',
       });
       if (error) {
-        Alert.alert('Verification Failed', 'Invalid OTP');
+        Alert.alert('Verification Failed', error.message);
       }
-      // On success, an onAuthStateChange listener will navigate the user
+      // On success, onAuthStateChange listener in App.tsx handles navigation
     } catch (err) {
       Alert.alert('An Unexpected Error Occurred', 'Please try again.');
     } finally {
@@ -313,17 +315,18 @@ const OTPScreen = () => {
     }
   };
 
-  // ✅ Implement the resend code logic
   const handleResendCode = async () => {
-    if (countdown > 0) return; // Prevent resend if timer is active
+    if (countdown > 0) return;
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({ phone: phone! });
     if (error) {
       Alert.alert('Error', 'Failed to resend code.');
     } else {
-    //   Alert.alert('Success', 'A new code has been sent.');
-      setOtp(['', '', '', '', '', '']); // Clear old OTP
-      setCountdown(60); // Reset timer
+      Alert.alert('Success', 'A new code has been sent.');
+      setOtp(['', '', '', '', '', '']);
+      setCountdown(60);
+      // ✅ Improved UX: Focus on the first input
+      inputs.current[0]?.focus();
     }
     setLoading(false);
   };
@@ -397,66 +400,62 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-      alignItems: 'center',
-      paddingTop: 60,
-      paddingBottom: 40,
-      paddingHorizontal: 24,
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
   },
   title: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: '#181411',
-      fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#181411',
   },
   subtitle: {
-      fontSize: 16,
-      color: '#8a7260',
-      marginTop: 8,
-      textAlign: 'center',
-      fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontSize: 16,
+    color: '#8a7260',
+    marginTop: 8,
+    textAlign: 'center',
   },
   formContainer: {
-      paddingHorizontal: 24,
+    paddingHorizontal: 24,
   },
   otpContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
   otpInput: {
-      width: 48,
-      height: 56,
-      backgroundColor: '#f5f2f0',
-      borderRadius: 12,
-      textAlign: 'center',
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: '#181411',
-      borderWidth: 1,
-      borderColor: '#e8dbce',
+    width: 48,
+    height: 56,
+    backgroundColor: '#f5f2f0',
+    borderRadius: 12,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#181411',
+    borderWidth: 1,
+    borderColor: '#e8dbce',
   },
   continueButton: {
-      backgroundColor: '#ec8627',
-      height: 52,
-      borderRadius: 26,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: 20,
+    backgroundColor: '#ec8627',
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
   },
   continueButtonText: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: '#181411',
-      fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#181411',
   },
   resendContainer: {
-      alignItems: 'center',
-      marginTop: 24,
+    alignItems: 'center',
+    marginTop: 24,
   },
   resendText: {
-      fontSize: 14,
-      color: '#8a7260',
-      fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontSize: 14,
+    color: '#8a7260',
   },
 });
 
