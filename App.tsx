@@ -201,6 +201,8 @@ import ShopsScreen from './app/UserScreens/shops';
 import TrackOrderScreen from './app/UserScreens/track_order';
 import ProfileScreen from './app/UserScreens/profile';
 
+import VendorStack from './app/StackNavigator/VendorStack';
+
 /**
  * This is the single source of truth for all navigation routes in the app.
  */
@@ -288,7 +290,8 @@ export default function App() {
             </>
           ) : userRole === 'vendor' ? (
             // --- Screen for the LOGGED IN VENDOR ---
-            <Stack.Screen name="MainVendor" component={TabNavigatorVendor} />
+            <Stack.Screen name="MainVendor" component={VendorStack} />
+            
           ) : userRole === 'delivery' ? (
             // --- Screen for the LOGGED IN DELIVERY partner ---
             <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />

@@ -1,36 +1,36 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  FlatList,
-  Platform,
-  StatusBar,
-  Image,
-  ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  TextInput, FlatList, Image, ListRenderItem, StatusBar, Platform
 } from "react-native";
-import * as ImagePicker from 'expo-image-picker';
-import { useMenu, MenuItem } from "./MenuContext";
-
-//firebase imports
-import { db } from '../../FirebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
-
+import * as ImagePicker from "expo-image-picker";
+import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+//import { StatusBar } from "react-native";
 
-// A custom checkbox component
-const CustomCheckbox = ({
-  label,
-  isSelected,
-  onValueChange,
-}: {
+import supabase  from "../../SupabaseClient";  // 👈 Supabase client
+
+// ---- Types ----
+type DietaryOptions = {
+  vegetarian: boolean;
+  glutenFree: boolean;
+  vegan: boolean;
+};
+
+type FormSection =
+  | { type: "input"; id: "itemName" | "price"; label: string; placeholder: string; keyboardType?: string }
+  | { type: "textArea"; id: "description"; label: string; placeholder: string }
+  | { type: "picker"; id: "category"; label: string }
+  | { type: "header"; id: string; title: string }
+  | { type: "checkbox"; id: "vegetarian" | "glutenFree" | "vegan"; label: string }
+  | { type: "upload"; id: "upload" };
+
+// ---- Custom Checkbox ----
+const CustomCheckbox: React.FC<{
   label: string;
   isSelected: boolean;
   onValueChange: () => void;
-}) => (
+}> = ({ label, isSelected, onValueChange }) => (
   <TouchableOpacity style={styles.checkboxContainer} onPress={onValueChange}>
     <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
       {isSelected && <MaterialIcons name="check" size={14} color="#181410" />}
@@ -39,33 +39,38 @@ const CustomCheckbox = ({
   </TouchableOpacity>
 );
 
-const formSections = [
-    { type: 'input', id: 'itemName', label: 'Item Name', placeholder: 'e.g. Chicken Sandwich' },
-    { type: 'textArea', id: 'description', label: 'Description', placeholder: 'e.g. Grilled chicken, lettuce, tomato, and mayo on a toasted bun' },
-    { type: 'input', id: 'price', label: 'Price', placeholder: '$', keyboardType: 'decimal-pad' },
-    { type: 'picker', id: 'category', label: 'Category' },
-    { type: 'header', id: 'dietaryHeader', title: 'Dietary Options' },
-    { type: 'checkbox', id: 'vegetarian', label: 'Vegetarian' },
-    { type: 'checkbox', id: 'glutenFree', label: 'Gluten-Free' },
-    { type: 'checkbox', id: 'vegan', label: 'Vegan' },
-    { type: 'header', id: 'imageHeader', title: 'Add Images' },
-    { type: 'upload', id: 'upload' },
+// ---- Form Sections ----
+const formSections: FormSection[] = [
+  { type: "input", id: "itemName", label: "Item Name", placeholder: "e.g. Chicken Sandwich" },
+  { type: "textArea", id: "description", label: "Description", placeholder: "e.g. Grilled chicken with mayo" },
+  { type: "input", id: "price", label: "Price", placeholder: "$", keyboardType: "decimal-pad" },
+  { type: "picker", id: "category", label: "Category" },
+  { type: "header", id: "dietaryHeader", title: "Dietary Options" },
+  { type: "checkbox", id: "vegetarian", label: "Vegetarian" },
+  { type: "checkbox", id: "glutenFree", label: "Gluten-Free" },
+  { type: "checkbox", id: "vegan", label: "Vegan" },
+  { type: "header", id: "imageHeader", title: "Add Images" },
+  { type: "upload", id: "upload" },
 ];
 
-
-import { useNavigation } from "@react-navigation/native";
-
-const AddItemScreen = () => {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [itemName, setItemName] = useState('');
-  const [price, setPrice] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const menuContext = useMenu();
-  const addMenuItem = menuContext?.addMenuItem;
-  const navigation = useNavigation();
+// ---- Main Screen ----
+const AddItemScreen: React.FC = () => {
+  const [itemName, setItemName] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [price, setPrice] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
   const [image, setImage] = useState<string | null>(null);
+  const [dietaryOptions, setDietaryOptions] = useState<DietaryOptions>({
+    vegetarian: false,
+    glutenFree: false,
+    vegan: false,
+  });
+
+  const navigation = useNavigation();
+
+  // ---- Pick Image ----
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
@@ -77,125 +82,125 @@ const AddItemScreen = () => {
     }
   };
 
+  // ---- Save Item ----
   const saveItem = async () => {
-    if (itemName && price && image) {
-      const newItem = {
-        name: itemName,
-        price: `$${price}`,
-        image: image,
-      };
+    if (!itemName || !price) {
+      alert("Please fill all required fields");
+      return;
+    }
 
-      try {
-        // Save to Firestore
-        const docRef = await addDoc(collection(db, 'products'), newItem);
+    try {
+      // Current vendor
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw userError || new Error("User not found");
 
-        const itemWithId = { id: docRef.id, ...newItem };
+      // Upload image
+      let imageUrl: string | null = null;
+      if (image) {
+        const fileExt = image.split(".").pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `items/${user.id}/${fileName}`;
 
-        if (addMenuItem) {
-          addMenuItem(itemWithId);
-        }
+        const imgResponse = await fetch(image);
+        const blob = await imgResponse.blob();
 
-        navigation.goBack();
+        const { error: uploadError } = await supabase.storage
+          .from("item-images")
+          .upload(filePath, blob, { upsert: true });
 
-        // Clear form
-        setItemName('');
-        setPrice('');
-        setImage(null);
-      } catch (error) {
-        console.error('Error saving item:', error);
-        alert('Failed to save item');
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("item-images")
+          .getPublicUrl(filePath);
+
+        imageUrl = publicUrlData.publicUrl;
       }
-    } else {
-      alert('Please fill all fields');
+
+      // Insert into items
+      const { error } = await supabase.from("items").insert([
+        {
+          vendor_id: user.id,
+          item_name: itemName,
+          description,
+          price: parseFloat(price),
+          category,
+          vegetarian: dietaryOptions.vegetarian,
+          gluten_free: dietaryOptions.glutenFree,
+          vegan: dietaryOptions.vegan,
+          image_url: imageUrl,
+        },
+      ]);
+
+      if (error) throw error;
+
+      alert("Item saved successfully!");
+      navigation.goBack();
+    } catch (err: any) {
+      console.error("Error saving item:", err.message);
+      alert("Failed to save item");
     }
   };
 
-  const [dietaryOptions, setDietaryOptions] = useState({
-    vegetarian: false,
-    glutenFree: false,
-    vegan: false,
-  });
-
-  const handleCheckboxChange = (option: keyof typeof dietaryOptions) => {
+  // ---- Toggle checkbox ----
+  const handleCheckboxChange = (option: keyof DietaryOptions) => {
     setDietaryOptions((prev) => ({ ...prev, [option]: !prev[option] }));
   };
 
-  const renderFormItem = ({ item }: { item: any }) => {
-      switch(item.type) {
-          case 'input':
-              return (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{item.label}</Text>
-                  <TextInput
-                    placeholder={item.placeholder}
-                    placeholderTextColor="#8a725c"
-                    style={styles.textInput}
-                    keyboardType={item.keyboardType || 'default'}
-                    value={item.id === 'itemName' ? itemName : price}
-                    onChangeText={(text) =>
-                      item.id === 'itemName' ? setItemName(text) : setPrice(text)
-                    }
-                  />
-                </View>
-              );
-          case 'textArea':
-              return (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{item.label}</Text>
-                  <TextInput
-                    placeholder={item.placeholder}
-                    placeholderTextColor="#8a725c"
-                    style={[styles.textInput, { height: 144, textAlignVertical: "top" }]}
-                    multiline
-                  />
-                </View>
-              );
-          case 'picker':
-              return (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{item.label}</Text>
-                  <TouchableOpacity style={styles.picker}>
-                    <Text style={styles.pickerText}>Select Category</Text>
-                    <MaterialIcons name="unfold-more" size={24} color="#8a725c" />
-                  </TouchableOpacity>
-                </View>
-              );
-          case 'header':
-              return <Text style={styles.sectionTitle}>{item.title}</Text>;
-          case 'checkbox':
-              return (
-                 <CustomCheckbox
-                    label={item.label}
-                    isSelected={dietaryOptions[item.id as keyof typeof dietaryOptions]}
-                    onValueChange={() => handleCheckboxChange(item.id as keyof typeof dietaryOptions)}
-                  />
-              );
-          case 'upload':
-              return (
-                <TouchableOpacity style={styles.uploadContainer} onPress={pickImage}>
-                  <Text style={styles.uploadTitle}>Upload Images</Text>
-                  <Text style={styles.uploadSubtitle}>
-                    High-quality images help customers choose your items. (Min. 200x200px)
-                  </Text>
+  // ---- Render form ----
+  const renderFormItem: ListRenderItem<FormSection> = ({ item }) => {
+    switch (item.type) {
+      case "input":
+        return (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{item.label}</Text>
+            <TextInput
+              placeholder={item.placeholder}
+              style={styles.textInput}
+              keyboardType={item.keyboardType as any}
+              value={item.id === "itemName" ? itemName : price}
+              onChangeText={(text) =>
+                item.id === "itemName" ? setItemName(text) : setPrice(text)
+              }
+            />
+          </View>
+        );
+      case "textArea":
+        return (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{item.label}</Text>
+            <TextInput
+              placeholder={item.placeholder}
+              style={[styles.textInput, { height: 100, textAlignVertical: "top" }]}
+              multiline
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
+        );
+      case "checkbox":
+        return (
+          <CustomCheckbox
+            label={item.label}
+            isSelected={dietaryOptions[item.id]}
+            onValueChange={() => handleCheckboxChange(item.id)}
+          />
+        );
+      case "upload":
+        return (
+          <TouchableOpacity style={styles.uploadContainer} onPress={pickImage}>
+            <Text style={styles.uploadTitle}>Upload Image</Text>
+            {image && <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />}
+          </TouchableOpacity>
+        );
+      case "header":
+        return <Text style={styles.sectionTitle}>{item.title}</Text>;
+      default:
+        return null;
+    }
+  };
 
-                  {image && (
-                    <Image
-                      source={{ uri: image }}
-                      style={{ width: 200, height: 200, borderRadius: 10, marginVertical: 10 }}
-                    />
-                  )}
-
-                  <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                    <Text style={styles.uploadButtonText}>Upload</Text>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-          default:
-              return null;
-      }
-  }
-
-    return (
+  return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header */}
@@ -210,44 +215,23 @@ const AddItemScreen = () => {
         {/* Form */}
         <FlatList
           data={formSections}
-          renderItem={({ item }) => <>{renderFormItem({ item })}</>}
+          renderItem={renderFormItem}
           keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+          contentContainerStyle={{ padding: 16 }}
         />
-        {/* Saved Items */}
-        {menuItems.length > 0 && (
-          <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-            <Text style={styles.sectionTitle}>Saved Items</Text>
-            <TextInput
-              style={[styles.textInput, { marginBottom: 12 }]}
-              placeholder="Search items..."
-              placeholderTextColor="#8a725c"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            <ScrollView>
-              {menuItems
-              .filter((item) =>
-                item.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((item, index) => (
-                <View key={item.id || index} style={styles.itemCard}>
-                  <Image source={{ uri: item.image }} style={styles.itemImage} />
-                  <Text style={styles.itemTitle}>{item.name}</Text>
-                  <Text style={{ fontSize: 14, color: '#666' }}>{item.price}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
-        {/* Footer Buttons */}
+        {/* Footer */}
         <View style={styles.footer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.footerButton, { backgroundColor: "#f1edea" }]}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={[styles.footerButton, { backgroundColor: "#f1edea" }]}
+          >
             <Text style={styles.footerButtonText}>Discard</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={saveItem} style={[styles.footerButton, { backgroundColor: "#f3e7dc" }]}>
+          <TouchableOpacity
+            onPress={saveItem}
+            style={[styles.footerButton, { backgroundColor: "#f3e7dc" }]}
+          >
             <Text style={styles.footerButtonText}>Save</Text>
           </TouchableOpacity>
         </View>

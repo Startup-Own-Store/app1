@@ -7,6 +7,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import DashboardScreen from '../screens/dashboard';
 import OrderScreen from '../screens/Order';
 import MenuScreen from '../screens/Menu';
+//import AddItemScreen from '../screens/add_item';
+
 
 const Tab = createBottomTabNavigator();
 
@@ -35,6 +37,7 @@ const TabNavigatorVendor = () => {
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Orders" component={OrderScreen} />
       <Tab.Screen name="Menu" component={MenuScreen} />
+    
     </Tab.Navigator>
   );
 };

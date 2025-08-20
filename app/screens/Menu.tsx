@@ -12,12 +12,10 @@ import {
   StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import AddItemScreen from './add_item';
+
 import { useMenu, MenuItem } from './MenuContext';
 
-//firebase imports
-import { db } from '../../FirebaseConfig';
-import { collection, getDocs } from 'firebase/firestore';
+import supabase from '../../SupabaseClient';
 
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useEffect } from 'react';
@@ -48,33 +46,42 @@ const VendorMenuScreen = () => {
     return matchesSearch && matchesTab;
   });
   
-  const renderMenuItem = ({ item }: { item: MenuItem }) => (
-    <TouchableOpacity style={styles.menuItemContainer} onPress={() => navigation.navigate('ProductDetails', { product: item })}>
+   const renderMenuItem = ({ item }: { item: MenuItem }) => (
+    <TouchableOpacity
+      style={styles.menuItemContainer}
+      onPress={() => navigation.navigate('ProductDetails', { product: item })}
+    >
       <Image source={{ uri: item.image }} style={styles.menuItemImage} />
       <View>
         <Text style={styles.menuItemName}>{item.name}</Text>
-        <Text style={styles.menuItemPrice}>{item.price}</Text>
+        <Text style={styles.menuItemPrice}>${item.price}</Text>
       </View>
     </TouchableOpacity>
   );
   
-  useEffect(() => {
+    useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'products'));
-        const products = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name ?? '',
-            price: data.price ?? '',
-            image: data.image ?? '',
-            unavailable: data.unavailable ?? false,
-          } as MenuItem;
-        });
+        const { data, error } = await supabase
+          .from('items')
+          .select('id, item_name, price, image_url, vegetarian, vegan, gluten_free');
+
+        if (error) {
+          console.error('Error fetching products:', error.message);
+          return;
+        }
+
+        const products = data.map((item: any) => ({
+          id: item.id,
+          name: item.item_name ?? '',
+          price: item.price ?? '',
+          image: item.image_url ?? '',
+          unavailable: false, // Supabase doesn't track availability unless you add a column
+        })) as MenuItem[];
+
         setMenuItems(products);
-      } catch (error) {
-        console.error('Error fetching products:', error);
+      } catch (err) {
+        console.error('Error fetching products:', err);
       }
     };
 
@@ -130,7 +137,7 @@ const VendorMenuScreen = () => {
         {/* Add Item FAB */}
         <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddItemScreen')}>
             <MaterialIcons name="add" size={24} color="#181410" />
-            <Text style={styles.fabText}>Add item</Text>
+            <Text style={styles.fabText}>Add items</Text>
         </TouchableOpacity>
 
       </View>
