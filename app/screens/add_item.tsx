@@ -70,69 +70,67 @@ const AddItemScreen: React.FC = () => {
   const navigation = useNavigation();
 
   // ---- Pick Image ----
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+    const pickImage = async () => {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-    }
-  };
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+      }
+    };
 
   // ---- Save Item ----
-  const saveItem = async () => {
+const saveItem = async () => {
   if (!itemName || !price) {
     alert("Please fill all required fields");
     return;
   }
 
   try {
-    // Get current vendor/user
+    // ---- Get current vendor/user (optional, since policy allows anon too) ----
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw userError || new Error("User not found");
+    if (userError) throw userError;
+    const userId = user?.id || "guest"; // fallback if anon uploads allowed
 
     let imageUrl: string | null = null;
 
-    // ---- Upload image if selected ----
     if (image) {
-      const fileExt = image.split(".").pop();
+      const uri = image; // from ImagePicker
+      const fileExt = uri.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `items/${user.id}/${fileName}`;
+      const filePath = `items/${userId}/${fileName}`;
 
-      // Convert local image → base64
-      const base64 = await FileSystem.readAsStringAsync(image, {
+      // ---- Read file as base64 ----
+      const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // Convert base64 → Uint8Array (Supabase requires binary)
-      const byteArray = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      // ---- Convert base64 -> Uint8Array ----
+      const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
-      // Upload to Supabase Storage
+      // ---- Upload to Supabase ----
       const { error: uploadError } = await supabase.storage
-        .from("item-images") // your bucket
-        .upload(filePath, byteArray, {
-          contentType: `image/${fileExt}`, // better for handling image type
-          upsert: true,
-        });
+        .from("item-images")
+        .upload(filePath, binary, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get Public URL
-      const { data: publicUrlData } = supabase.storage
+      // ---- Get Public URL (requires SELECT policy) ----
+      const { data } = supabase.storage
         .from("item-images")
         .getPublicUrl(filePath);
 
-      imageUrl = publicUrlData.publicUrl;
+      imageUrl = data.publicUrl;
     }
 
     // ---- Save item in DB ----
     const { error } = await supabase.from("items").insert([
       {
-        vendor_id: user.id,
+        vendor_id: userId,
         item_name: itemName,
         description,
         price: parseFloat(price),
@@ -140,7 +138,7 @@ const AddItemScreen: React.FC = () => {
         vegetarian: dietaryOptions.vegetarian,
         gluten_free: dietaryOptions.glutenFree,
         vegan: dietaryOptions.vegan,
-        image_url: imageUrl, // <-- storing Supabase image URL
+        image_url: imageUrl, // Supabase public URL
       },
     ]);
 
