@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,93 +11,183 @@ import {
   FlatList,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 
-// FIX: If you see an error on the line below, it's likely because the type
-// definitions for react-native-vector-icons are not installed.
-// Run this command in your terminal to fix it:
-// npm install @types/react-native-vector-icons --save-dev
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
-
-const productData = {
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAu88bpbxVsUZOIU00VYvFiLx7X2J3IjC7IJvIgvPYddXrf12lw8zSRekuwsfPIyWbjQkuGcOmWVK1Jb00wZD0wEBeZjbHns79qZ9UWFCMcaQ3-F9lEl6N9oGsurfPaOXkesegaQjPGg6Stryk9byQZ_xesB7yZ0vXnTHsHuxcrnLZg6NXbK3iFBghIIKiBTQCpoXrcO1fa0RSryWSIGagl-xIBr0o0olgxtJp2lAEVvHAipF4rmkhDIaClsfJ-eZgTDCkHgYBuiqz4',
-};
-
-// Combine all screen elements into a single data array for FlatList
-const listData = [
-    { type: 'image', id: 'productImage', uri: productData.image },
-    { type: 'input', id: 'productName', label: 'Product Name', defaultValue: 'Spicy Chicken Sandwich' },
-    { type: 'textArea', id: 'description', label: 'Description', defaultValue: 'A crispy, juicy chicken fillet with spicy mayo, lettuce, and pickles on a toasted brioche bun.' },
-    { type: 'input', id: 'price', label: 'Price', defaultValue: '$8.99', keyboardType: 'decimal-pad' },
-    { type: 'picker', id: 'category', label: 'Category', value: 'Sandwiches' },
-    { type: 'toggle', id: 'availability', label: 'Available' },
-];
+import { useNavigation, useRoute } from '@react-navigation/native';
+import supabase from '../../SupabaseClient'; // adjust path
 
 const ProductDetailsScreen = () => {
-    const navigation = useNavigation();
-    const [isAvailable, setIsAvailable] = useState(false);
-    const toggleSwitch = () => setIsAvailable(previousState => !previousState);
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { itemId } = route.params as { itemId: string };
 
-    const renderItem = ({ item }: { item: any }) => {
-        switch(item.type) {
-            case 'image':
-                return (
-                    <View style={styles.imageContainer}>
-                        <Image source={{ uri: item.uri }} style={styles.productImage} />
-                    </View>
-                );
-            case 'input':
-                return (
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>{item.label}</Text>
-                        <TextInput
-                            placeholderTextColor="#8a725c"
-                            style={styles.textInput}
-                            defaultValue={item.defaultValue}
-                            keyboardType={item.keyboardType || 'default'}
-                        />
-                    </View>
-                );
-            case 'textArea':
-                return (
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>{item.label}</Text>
-                        <TextInput
-                            placeholderTextColor="#8a725c"
-                            style={[styles.textInput, { height: 144, textAlignVertical: 'top' }]}
-                            multiline
-                            defaultValue={item.defaultValue}
-                        />
-                    </View>
-                );
-            case 'picker':
-                return (
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>{item.label}</Text>
-                        <TouchableOpacity style={styles.picker}>
-                            <Text style={styles.pickerText}>{item.value}</Text>
-                            <MaterialIcons name="unfold-more" size={24} color="#8a725c" />
-                        </TouchableOpacity>
-                    </View>
-                );
-            case 'toggle':
-                return (
-                    <View style={styles.availabilityContainer}>
-                        <Text style={styles.label}>{item.label}</Text>
-                        <Switch
-                            trackColor={{ false: "#f1edea", true: "#f3e7dc" }}
-                            thumbColor={"#ffffff"}
-                            ios_backgroundColor="#f1edea"
-                            onValueChange={toggleSwitch}
-                            value={isAvailable}
-                        />
-                    </View>
-                );
-            default:
-                return null;
-        }
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  // new states for editing
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("");
+
+  const toggleSwitch = () => setIsAvailable(prev => !prev);
+
+  // ---- Fetch product details ----
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("items")
+        .select("*")
+        .eq("id", itemId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching product:", error.message);
+      } else {
+        setProduct(data);
+        setIsAvailable(data.available);
+
+        // set local editable states
+        setName(data.item_name || "");
+        setDescription(data.description || "");
+        setPrice(data.price ? String(data.price) : "");
+        setCategory(data.category || "");
+      }
+      setLoading(false);
     };
+
+    fetchProduct();
+  }, [itemId]);
+
+  // ---- Save Changes ----
+  const handleSave = async () => {
+    const { error } = await supabase
+      .from("items")
+      .update({
+        item_name: name,
+        description,
+        price: parseFloat(price) || 0,
+        category,
+        available: isAvailable,
+      })
+      .eq("id", itemId);
+
+    if (error) {
+      console.error("Error updating product:", error.message);
+      alert("Failed to update product");
+    } else {
+      alert("Product updated successfully!");
+      navigation.goBack();
+    }
+  };
+
+  // ---- Delete Product ----
+  const handleDelete = async () => {
+    const { error } = await supabase
+      .from("items")
+      .delete()
+      .eq("id", itemId);
+
+    if (error) {
+      console.error("Error deleting product:", error.message);
+      alert("Failed to delete product");
+    } else {
+      alert("Product deleted successfully!");
+      navigation.goBack();
+    }
+  };
+
+  // ---- Build listData dynamically ----
+  const listData = product
+    ? [
+        ...(product.image_url
+          ? [{ type: "image", id: "productImage", uri: product.image_url }]
+          : []),
+        { type: "input", id: "productName", label: "Product Name", value: name, setter: setName },
+        { type: "textArea", id: "description", label: "Description", value: description, setter: setDescription },
+        { type: "input", id: "price", label: "Price", value: price, setter: setPrice, keyboardType: "decimal-pad" },
+        { type: "input", id: "category", label: "Category", value: category, setter: setCategory },
+        { type: "toggle", id: "availability", label: "Available" },
+      ]
+    : [];
+
+  const renderItem = ({ item }: { item: any }) => {
+    switch (item.type) {
+      case "image":
+        return (
+          <View style={styles.imageContainer}>
+            {item.uri ? (
+              <Image source={{ uri: item.uri }} style={styles.productImage} />
+            ) : (
+              <View style={[styles.productImage, { justifyContent: "center", alignItems: "center", backgroundColor: "#f1edea" }]}>
+                <Text style={{ color: "#8a725c" }}>No Image</Text>
+              </View>
+            )}
+          </View>
+        );
+      case "input":
+        return (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{item.label}</Text>
+            <TextInput
+              placeholderTextColor="#8a725c"
+              style={styles.textInput}
+              value={item.value}
+              onChangeText={item.setter}
+              keyboardType={item.keyboardType || "default"}
+            />
+          </View>
+        );
+      case "textArea":
+        return (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{item.label}</Text>
+            <TextInput
+              placeholderTextColor="#8a725c"
+              style={[styles.textInput, { height: 144, textAlignVertical: "top" }]}
+              multiline
+              value={item.value}
+              onChangeText={item.setter}
+            />
+          </View>
+        );
+      case "toggle":
+        return (
+          <View style={styles.availabilityContainer}>
+            <Text style={styles.label}>{item.label}</Text>
+            <Switch
+              trackColor={{ false: "#f1edea", true: "#f3e7dc" }}
+              thumbColor={"#ffffff"}
+              ios_backgroundColor="#f1edea"
+              onValueChange={toggleSwitch}
+              value={isAvailable}
+            />
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ActivityIndicator size="large" color="#8a725c" style={{ marginTop: 50 }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!product) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Text style={{ textAlign: "center", marginTop: 50 }}>Product not found</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -112,19 +202,19 @@ const ProductDetailsScreen = () => {
         </View>
 
         <FlatList
-            data={listData}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.formContainer}
+          data={listData}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.formContainer}
         />
 
         {/* Footer Buttons */}
         <View style={styles.footer}>
-          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#f1edea' }]}>
+          <TouchableOpacity style={[styles.footerButton, { backgroundColor: "#f1edea" }]} onPress={handleDelete}>
             <Text style={styles.footerButtonText}>Delete Product</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#f3e7dc' }]}>
+          <TouchableOpacity style={[styles.footerButton, { backgroundColor: "#f3e7dc" }]} onPress={handleSave}>
             <Text style={styles.footerButtonText}>Save Changes</Text>
           </TouchableOpacity>
         </View>
@@ -132,6 +222,7 @@ const ProductDetailsScreen = () => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeArea: {

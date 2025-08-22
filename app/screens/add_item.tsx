@@ -4,6 +4,7 @@ import {
   TextInput, FlatList, Image, ListRenderItem, StatusBar, Platform
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 //import { StatusBar } from "react-native";
@@ -84,63 +85,74 @@ const AddItemScreen: React.FC = () => {
 
   // ---- Save Item ----
   const saveItem = async () => {
-    if (!itemName || !price) {
-      alert("Please fill all required fields");
-      return;
+  if (!itemName || !price) {
+    alert("Please fill all required fields");
+    return;
+  }
+
+  try {
+    // Get current vendor/user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw userError || new Error("User not found");
+
+    let imageUrl: string | null = null;
+
+    // ---- Upload image if selected ----
+    if (image) {
+      const fileExt = image.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `items/${user.id}/${fileName}`;
+
+      // Convert local image → base64
+      const base64 = await FileSystem.readAsStringAsync(image, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Convert base64 → Uint8Array (Supabase requires binary)
+      const byteArray = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("item-images") // your bucket
+        .upload(filePath, byteArray, {
+          contentType: `image/${fileExt}`, // better for handling image type
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get Public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("item-images")
+        .getPublicUrl(filePath);
+
+      imageUrl = publicUrlData.publicUrl;
     }
 
-    try {
-      // Current vendor
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw userError || new Error("User not found");
+    // ---- Save item in DB ----
+    const { error } = await supabase.from("items").insert([
+      {
+        vendor_id: user.id,
+        item_name: itemName,
+        description,
+        price: parseFloat(price),
+        category,
+        vegetarian: dietaryOptions.vegetarian,
+        gluten_free: dietaryOptions.glutenFree,
+        vegan: dietaryOptions.vegan,
+        image_url: imageUrl, // <-- storing Supabase image URL
+      },
+    ]);
 
-      // Upload image
-      let imageUrl: string | null = null;
-      if (image) {
-        const fileExt = image.split(".").pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `items/${user.id}/${fileName}`;
+    if (error) throw error;
 
-        const imgResponse = await fetch(image);
-        const blob = await imgResponse.blob();
-
-        const { error: uploadError } = await supabase.storage
-          .from("item-images")
-          .upload(filePath, blob, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from("item-images")
-          .getPublicUrl(filePath);
-
-        imageUrl = publicUrlData.publicUrl;
-      }
-
-      // Insert into items
-      const { error } = await supabase.from("items").insert([
-        {
-          vendor_id: user.id,
-          item_name: itemName,
-          description,
-          price: parseFloat(price),
-          category,
-          vegetarian: dietaryOptions.vegetarian,
-          gluten_free: dietaryOptions.glutenFree,
-          vegan: dietaryOptions.vegan,
-          image_url: imageUrl,
-        },
-      ]);
-
-      if (error) throw error;
-
-      alert("Item saved successfully!");
-      navigation.goBack();
-    } catch (err: any) {
-      console.error("Error saving item:", err.message);
-      alert("Failed to save item");
-    }
-  };
+    alert("Item saved successfully!");
+    navigation.goBack();
+  } catch (err: any) {
+    console.error("Error saving item:", err.message);
+    alert("Failed to save item");
+  }
+};
 
   // ---- Toggle checkbox ----
   const handleCheckboxChange = (option: keyof DietaryOptions) => {
@@ -190,7 +202,9 @@ const AddItemScreen: React.FC = () => {
         return (
           <TouchableOpacity style={styles.uploadContainer} onPress={pickImage}>
             <Text style={styles.uploadTitle}>Upload Image</Text>
-            {image && <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />}
+           {image && image.startsWith("file") && (
+  <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />
+)}
           </TouchableOpacity>
         );
       case "header":

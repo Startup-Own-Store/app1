@@ -20,14 +20,14 @@ import supabase from '../../SupabaseClient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useEffect } from 'react';
 
-// const menuItems = [
-//     { id: '1', name: 'Spicy Chicken Sandwich', price: '$8.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUJlYMuKVaILDHvfppp6UjnIA_vi-wQqxZPr8fLlyd9bsdgrbJBP3q9zBbU5zJqBDvmBzsg7ng_SPW7C_o8PpV2GEhZUhzXDlNkgHzs2sgKjbA_D-rH64oeq7iQEuV6CVGHYMfO9fk8YhcVWLQH7WOEZraOJ14uSbUBbaqs_FhnzUeIPUVNgEB4YtQWkbnIHMuyGsPGVUefYjMYU_hJVJ0HXt79QF5ljFwCrjxZcVs9gncGJaoNwO0-9rd31agqouT2_el8dJpVwfx' },
-//     { id: '2', name: 'Classic Cheeseburger', price: '$7.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCiCgTcQLJiY6iTDf2TW8y1XLNY5sLfEctJB_5KPWC3tauaWpHisRgoSvWaLBjK3ZiK2gyW38O7vB6Evi2IVfa8Ubqj0FI5tpIeXw2qtbXVGvKQnlyzCKMx9q65me-yeSafPbvTpBgoKvr5kLkerac1leB9zBA2Wbb4vUe5rWrWYcc0WaJUYG0MQIIBxsOVikhapOGPfMWzncgc8mWH8AhAyOdbiNRsNgcL1GaRUoNsgCowTgqIvIbc-KYNMCJmpd8DxXhu-HyO39_B' },
-//     { id: '3', name: 'Veggie Burger', price: '$6.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBLspSFhiQXTF36LAycSS4QHVoUsgwzi04l_6ZoC8YtqXcyOFKf3hHmFTEuwyeNyAP0csOv0Ss4FYO2IfGuH5qxTzauldt6SA7TQdgorOZvTDWE_yu_pKlcnYxO80A0CLjp7PRSDx2S6ESy-j8FFIysQ5C1DKxl7Lzwtb9mKtBt0pXvRSwTuwUYJYgHvA2Oh6nR1LZVmKpD8piETiHAhwI-JI1r2qhl-J5PhHw-PMiluOgbFq90ImQXqNvRz2ZIbDSUcFzxkNNlsRG9' },
-//     { id: '4', name: 'Fries', price: '$3.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBE0pMvLg7bA5LHYbWuOrBlW1eej2VM1e58LGjBybIgGeUkO7_k4-K_cluQYcWJdPn-y5__Diyhv2YZ6AEQwhuuDpf_xat1z2VAG3fRARwE0qkR1zimAQJgOKoHLod__STd4AtBwBLhSLbxWA_0i1FVyIfEmQEoTXdijnvcTlCQFgKRznr73cAU5oNmfKmViuBOJuzLR2-KRfspj4oDste95WqvsizZnkWc2OgmQBr7xkbvABJGNBgZTQw1hg21vHaFnAJp54S-ABb5' },
-//     { id: '5', name: 'Onion Rings', price: '$4.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQnwAI0yYvvlH-FmAJ_CiBvywTgJq77husJQSFIRszSv3o3j92zjwoeP5N6YTkKROvQhCCiAIrGb5nktXN6a_XpgnT5690yVaTGs9y15D9XI1e_sqjWWbyAcgrgks1HgCThK37CJ0E9HtSHpeu1b2Y92gYh3rrYOBCbUnh9axDWMUFX2Zl3zuUpemedNcBxFmjOyPjkQZYDfeE24mzeFAshOEM-0XeB-aC5p-G8SIZvwaPzCifBcxevbH0ZtTzWxDVHf1woBVLmuj9' },
-//     { id: '6', name: 'Milkshake', price: '$5.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBE-e7_3vd_P-sk42oCr-jBYXkTIy75CZ-8LN_30qTJvGnNRNLyLZuJVRlEtC_Q9VdKQi_buV9bupQ8C4M3YjeWfnZMj1D2V8ZNBSuoHIDU7H8PDqP5HhQz2E9_b5JpRsaFTGvJSqzEwdGAiOse6K4tWsDZXPCXYH7Fi4uxz0G6syFp33zjwK2xVsr5R2LDJIFB2zG0AMab1lvS-krpnJDmJ-IhtRqyfpxE9-hXvtIbf6egdluKbWuSlc01ugk4HneSGotX0WHIOwYY' },
-// ];
+const menuItems = [
+    { id: '1', name: 'Spicy Chicken Sandwich', price: '$8.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUJlYMuKVaILDHvfppp6UjnIA_vi-wQqxZPr8fLlyd9bsdgrbJBP3q9zBbU5zJqBDvmBzsg7ng_SPW7C_o8PpV2GEhZUhzXDlNkgHzs2sgKjbA_D-rH64oeq7iQEuV6CVGHYMfO9fk8YhcVWLQH7WOEZraOJ14uSbUBbaqs_FhnzUeIPUVNgEB4YtQWkbnIHMuyGsPGVUefYjMYU_hJVJ0HXt79QF5ljFwCrjxZcVs9gncGJaoNwO0-9rd31agqouT2_el8dJpVwfx' },
+    { id: '2', name: 'Classic Cheeseburger', price: '$7.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCiCgTcQLJiY6iTDf2TW8y1XLNY5sLfEctJB_5KPWC3tauaWpHisRgoSvWaLBjK3ZiK2gyW38O7vB6Evi2IVfa8Ubqj0FI5tpIeXw2qtbXVGvKQnlyzCKMx9q65me-yeSafPbvTpBgoKvr5kLkerac1leB9zBA2Wbb4vUe5rWrWYcc0WaJUYG0MQIIBxsOVikhapOGPfMWzncgc8mWH8AhAyOdbiNRsNgcL1GaRUoNsgCowTgqIvIbc-KYNMCJmpd8DxXhu-HyO39_B' },
+    { id: '3', name: 'Veggie Burger', price: '$6.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBLspSFhiQXTF36LAycSS4QHVoUsgwzi04l_6ZoC8YtqXcyOFKf3hHmFTEuwyeNyAP0csOv0Ss4FYO2IfGuH5qxTzauldt6SA7TQdgorOZvTDWE_yu_pKlcnYxO80A0CLjp7PRSDx2S6ESy-j8FFIysQ5C1DKxl7Lzwtb9mKtBt0pXvRSwTuwUYJYgHvA2Oh6nR1LZVmKpD8piETiHAhwI-JI1r2qhl-J5PhHw-PMiluOgbFq90ImQXqNvRz2ZIbDSUcFzxkNNlsRG9' },
+    { id: '4', name: 'Fries', price: '$3.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBE0pMvLg7bA5LHYbWuOrBlW1eej2VM1e58LGjBybIgGeUkO7_k4-K_cluQYcWJdPn-y5__Diyhv2YZ6AEQwhuuDpf_xat1z2VAG3fRARwE0qkR1zimAQJgOKoHLod__STd4AtBwBLhSLbxWA_0i1FVyIfEmQEoTXdijnvcTlCQFgKRznr73cAU5oNmfKmViuBOJuzLR2-KRfspj4oDste95WqvsizZnkWc2OgmQBr7xkbvABJGNBgZTQw1hg21vHaFnAJp54S-ABb5' },
+    { id: '5', name: 'Onion Rings', price: '$4.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQnwAI0yYvvlH-FmAJ_CiBvywTgJq77husJQSFIRszSv3o3j92zjwoeP5N6YTkKROvQhCCiAIrGb5nktXN6a_XpgnT5690yVaTGs9y15D9XI1e_sqjWWbyAcgrgks1HgCThK37CJ0E9HtSHpeu1b2Y92gYh3rrYOBCbUnh9axDWMUFX2Zl3zuUpemedNcBxFmjOyPjkQZYDfeE24mzeFAshOEM-0XeB-aC5p-G8SIZvwaPzCifBcxevbH0ZtTzWxDVHf1woBVLmuj9' },
+    { id: '6', name: 'Milkshake', price: '$5.99', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBE-e7_3vd_P-sk42oCr-jBYXkTIy75CZ-8LN_30qTJvGnNRNLyLZuJVRlEtC_Q9VdKQi_buV9bupQ8C4M3YjeWfnZMj1D2V8ZNBSuoHIDU7H8PDqP5HhQz2E9_b5JpRsaFTGvJSqzEwdGAiOse6K4tWsDZXPCXYH7Fi4uxz0G6syFp33zjwK2xVsr5R2LDJIFB2zG0AMab1lvS-krpnJDmJ-IhtRqyfpxE9-hXvtIbf6egdluKbWuSlc01ugk4HneSGotX0WHIOwYY' },
+];
 
 const VendorMenuScreen = () => {
   const [activeTab, setActiveTab] = useState('All');
@@ -49,7 +49,7 @@ const VendorMenuScreen = () => {
    const renderMenuItem = ({ item }: { item: MenuItem }) => (
     <TouchableOpacity
       style={styles.menuItemContainer}
-      onPress={() => navigation.navigate('ProductDetails', { product: item })}
+      onPress={() => navigation.navigate("ProductDetails", { itemId: item.id })}
     >
       <Image source={{ uri: item.image }} style={styles.menuItemImage} />
       <View>
