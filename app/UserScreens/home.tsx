@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useState, useEffect } from 'react';
 
 // FIX: If you see an error on the line below, it's likely because the type
 // definitions for react-native-vector-icons are not installed.
@@ -21,128 +22,189 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 // npm install @types/react-native-vector-icons --save-dev
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { RootStackParamList } from '../../App';
+import supabase from '../../SupabaseClient';
 
-const categories = [
-    { id: '1', name: 'Offers', icon: 'local-offer' },
-    { id: '2', name: 'Pizza', icon: 'local-pizza' },
-    { id: '3', name: 'Burgers', icon: 'fastfood' },
-    { id: '4', name: 'Healthy', icon: 'spa' },
-    { id: '5', name: 'Desserts', icon: 'cake' },
-    { id: '6', name: 'Asian', icon: 'ramen-dining' },
-];
+interface Restaurant {
+  user_id: string;
+  image?: string;
+  rating?: number;
+  time?: string;
+  created_at?: string;
+  email?: string;
+  full_name?: string;
+  phone?: string;
+}
 
-const featuredShops = [
-    { id: '1', name: 'The Gourmet Kitchen', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuArAa5uYdP47N-dQFSh3GshvRDTij-EP_UAkjhw0ngwfaj0Q9h2_Vp7FzQT9_tuQbescpyEbNMecFpIpVdyqYMGQnVemyWHU4EH3TSkHiPmoM1bijpHY1-RnqUtb-zWrBoQFHk08BLjGwwVxhFH-s_pWqErzO9388OLi5HF1ua6EpnmNv-3Rj1XV2yE4fVu2EIL9oOQD2eonOjrUYgTxrdhItIGPrAdRMfi0hox9f1j979IKT3Z2JgoVvaatUx_oGugP7QmjkX5R8o', rating: '4.8', time: '25-30 min' },
-    { id: '2', name: 'Urban Bites', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBB0GKNPVPbYRnrUKEIsuurhsQeMM97Uvhc1XBXHbWMfq3zKADfDdffwmM1csMo-mnumEcup__B_WJuhDqoEUYIu5TKtHfJ5n732JCQdCgyOz7HnMfyM4itoTliJJ1KlJ-0OdWxXxwIlOUjdyAjzTuI-lCliMKPXSSlPh04IHD0224ZQkdh9BpHWOMwwNJhtolhqCPFMHeSZX06wQPTcf8VAFUKGooLAziCQ_S4dsp2QtNDrPLhthewp2Of4wh-IinvbQCuEfLr2Xk', rating: '4.5', time: '20-25 min' },
-    { id: '3', name: 'Nature\'s Table', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC78xQitrYnaA4mcwXJs52uHJlKOvn-PW4aXR5M-G5XfDYbjKsJxSQFCr4TN3hEmbWauBaYWpJgqqQW1zu3zU5No53rFB5cdY5iDWhW-sWG3FwFsV2W_xLiaxhCloMU4FW_NLzQcP1qmvHnQhA3UKy5YaR9VnpTjs0CIvq8S-_xtE5x3iKHJiZ7ACvsbV4ysjQ17KW1Up-qoxZBaKTItu-kMtCruQxrnLSF9LdDDkh91BtjEUfDeyMDdk8f-od5waGgtBTIcUf8Y9I', rating: '4.9', time: '30-35 min' },
-];
-
-const allRestaurants = [
-    { id: '4', name: 'The Burger Joint', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA_9KFsl1P3kEJpDAbS9Z_sbEOCfyb2GbzzrQn6hwYwNYkr9xL9P71WVvJqMbgWfUsYzwYIPWDwm3NrXp6QJ5N2ONN3VUrZ_WAMQcCrc1-0NBzOeEmy0FroLegd72uzYdxXtCWXFdgviaUWXTebRDsuqbeol1MhRZ67pcpj3PUTiLMVn5wzh_e50swEABSksdN40xB1iUTslKGd3K1K1rvteA8ij-70KYbBEtjojaps9XVx3u4oVKQVTuHXidcUeq0xrFSw8428IHg', rating: '4.6', time: '15-20 min' },
-    { id: '5', name: 'Sushi Central', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDPYHgU5ePFrCRnc1PTYALGNLx-ZIRyyr5tbE8EYtTJE1lRD0r_5PMKZCD7ThivzWEfxNQcx5yULn_O55fksGllV0KBwJWCAaxgvpmV9mrwAWDWRk6AGodqOoVLjNKI53gBMeN85MLOUnGfed-LAjbn_77ZYJMju22Oxg9EHDSnrtRij04wpz8oEtUkO-JOsDMYtJ8xz-mmtHqRGX81p_n74JsUE-nFiSGojOwHhTC4cuYBGCol91_xwmCKzILH7pe2CrogTrcaY1I', rating: '4.7', time: '25-30 min' },
-    { id: '6', name: 'Pasta Palace', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA56V307I0j73BYKi-LZkJzePTS99ICQvX8XoFefgYWpD0KXVOaB7V4FuhTai2tJ3y29l-apKWQbRTdU6Vcnp5ky-JgMaE42MhxhBlIIKy9D24BKCCWlgTeFMWWg7JKHx7JFg07gCBP_kACvOJfabwK-kaZ8FKWEURXxiT31VZ3kMKnThulncux3IC3QTEiCzguVtTM7VMTcMOVTUkrrPr8VumSfRRHtiZV1cZBHOwr-TG0hZztcEvCiSVIIJlQYI2ji4QTPQqQ3bg', rating: '4.8', time: '20-30 min' },
-];
 
 
 const UserHomeScreen = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const [searchQuery, setSearchQuery] = React.useState('');
+  const categories = [
+  { id: '1', name: 'All', icon: 'restaurant' },
+  { id: '2', name: 'Fast Food', icon: 'fastfood' },
+  { id: '3', name: 'Coffee', icon: 'local-cafe' },
+  { id: '4', name: 'Desserts', icon: 'cake' },
+  { id: '5', name: 'Healthy', icon: 'spa' },
+];
 
-    const filteredFeaturedShops = featuredShops.filter(shop => 
-        shop.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Fetch restaurants from vendor_profiles table
+  const fetchRestaurants = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vendor_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching restaurants:', error);
+        return;
+      }
+
+      setAllRestaurants(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRestaurants();
+  }, []);
+
+  // Filter functions
+  const filteredRestaurants = allRestaurants.filter(restaurant =>
+    restaurant.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // For featured shops, you might want to create a separate table or use a flag
+  // For now, I'll use the first 3 restaurants as featured
+  const featuredShops = allRestaurants.slice(0, 3);
+
+  const filteredFeaturedShops = featuredShops.filter(shop =>
+    shop.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Render functions
+  const renderFeaturedShop = ({ item }: { item: Restaurant }) => (
+    <TouchableOpacity
+      style={styles.featuredShopContainer}
+      onPress={() => navigation.navigate('RestaurantMenu', { shopId: item.user_id, shopName: item.full_name || '' })}
+    >
+      <ImageBackground
+        source={{ uri: item.image || 'https://via.placeholder.com/300x150?text=Restaurant' }}
+        style={styles.featuredShopImage}
+        imageStyle={{ borderRadius: 12 }}
+      >
+        <View style={styles.featuredGradientOverlay}>
+          <Text style={styles.featuredShopName}>{item.full_name}</Text>
+          <View style={styles.shopItemInfo}>
+            <MaterialIcons name="star" size={16} color="#ffb400" />
+            <Text style={styles.featuredShopInfoText}>
+              {item.rating || '4.5'} · {item.time || '30-40 min'}
+            </Text>
+          </View>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
+
+  const renderAllRestaurants = ({ item }: { item: Restaurant }) => (
+    <TouchableOpacity
+      style={styles.restaurantContainer}
+      onPress={() => navigation.navigate('RestaurantMenu', { shopId: item.user_id, shopName: item.full_name || '' })}
+    >
+      <Image
+        source={{ uri: item.image || 'https://via.placeholder.com/100x100?text=Restaurant' }}
+        style={styles.restaurantImage}
+      />
+      <View style={styles.restaurantDetails}>
+        <Text style={styles.restaurantName}>{item.full_name}</Text>
+        <View style={styles.shopItemInfo}>
+          <MaterialIcons name="star" size={16} color="#ffb400" />
+          <Text style={styles.restaurantRating}>{item.rating || '4.5'}</Text>
+          <Text style={styles.restaurantTime}>· {item.time || '30-40 min'}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderHeader = () => (
+    <>
+      {/* Offer Banner */}
+      <TouchableOpacity style={styles.offerBanner}>
+        <ImageBackground
+          source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDPYHgU5ePFrCRnc1PTYALGNLx-ZIRyyr5tbE8EYtTJE1lRD0r_5PMKZCD7ThivzWEfxNQcx5yULn_O55fksGllV0KBwJWCAaxgvpmV9mrwAWDWRk6AGodqOoVLjNKI53gBMeN85MLOUnGfed-LAjbn_77ZYJMju22Oxg9EHDSnrtRij04wpz8oEtUkO-JOsDMYtJ8xz-mmtHqRGX81p_n74JsUE-nFiSGojOwHhTC4cuYBGCol91_xwmCKzILH7pe2CrogTrcaY1I' }}
+          style={styles.offerBannerImage}
+          imageStyle={{ borderRadius: 16 }}
+        >
+          <View style={styles.gradientOverlay}>
+            <Text style={styles.offerTitle}>50% OFF</Text>
+            <Text style={styles.offerSubtitle}>on your first order</Text>
+          </View>
+        </ImageBackground>
+      </TouchableOpacity>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputWrapper}>
+          <MaterialIcons name="search" size={22} color="#8a7260" style={{ marginRight: 8 }} />
+          <TextInput
+            placeholder="Restaurants or items"
+            placeholderTextColor="#8a7260"
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      </View>
+
+      {/* Categories */}
+      <FlatList
+        horizontal
+        data={categories}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.categoryChip}>
+            <MaterialIcons name={item.icon} size={20} color="#181411" />
+            <Text style={styles.categoryText}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+        keyExtractor={item => item.id}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoriesContainer}
+      />
+
+      <Text style={styles.sectionTitle}>Featured Shops</Text>
+      {filteredFeaturedShops.length > 0 ? (
+        <FlatList
+          horizontal
+          data={filteredFeaturedShops}
+          renderItem={renderFeaturedShop}
+          keyExtractor={item => item.user_id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.featuredContainer}
+        />
+      ) : (
+        <Text style={styles.noResultsText}>No featured shops found</Text>
+      )}
+
+      <Text style={styles.sectionTitle}>All Restaurants</Text>
+    </>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading restaurants...</Text>
+        </View>
+      </SafeAreaView>
     );
-
-    const filteredRestaurants = allRestaurants.filter(restaurant => 
-        restaurant.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const renderFeaturedShop = ({ item }: { item: typeof featuredShops[0] }) => (
-        <TouchableOpacity style={styles.featuredShopContainer} onPress={() => navigation.navigate('RestaurantMenu', { shopId: item.id, shopName: item.name })}>
-            <ImageBackground source={{ uri: item.image }} style={styles.featuredShopImage} imageStyle={{ borderRadius: 12 }}>
-                <View style={styles.featuredGradientOverlay}>
-                    <Text style={styles.featuredShopName}>{item.name}</Text>
-                    <View style={styles.shopItemInfo}>
-                        <MaterialIcons name="star" size={16} color="#ffb400" />
-                        <Text style={styles.featuredShopInfoText}>{item.rating} · {item.time}</Text>
-                    </View>
-                </View>
-            </ImageBackground>
-        </TouchableOpacity>
-    );
-
-    const renderAllRestaurants = ({ item }: { item: typeof allRestaurants[0] }) => (
-        <TouchableOpacity style={styles.restaurantContainer} onPress={() => navigation.navigate('RestaurantMenu', { shopId: item.id, shopName: item.name })}>
-            <Image source={{ uri: item.image }} style={styles.restaurantImage} />
-            <View style={styles.restaurantDetails}>
-                <Text style={styles.restaurantName}>{item.name}</Text>
-                <View style={styles.shopItemInfo}>
-                    <MaterialIcons name="star" size={16} color="#ffb400" />
-                    <Text style={styles.restaurantRating}>{item.rating}</Text>
-                    <Text style={styles.restaurantTime}>· {item.time}</Text>
-                </View>
-            </View>
-        </TouchableOpacity>
-    );
-
-    const renderHeader = () => (
-        <>
-            {/* Offer Banner */}
-            <TouchableOpacity style={styles.offerBanner}>
-                <ImageBackground 
-                    source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDPYHgU5ePFrCRnc1PTYALGNLx-ZIRyyr5tbE8EYtTJE1lRD0r_5PMKZCD7ThivzWEfxNQcx5yULn_O55fksGllV0KBwJWCAaxgvpmV9mrwAWDWRk6AGodqOoVLjNKI53gBMeN85MLOUnGfed-LAjbn_77ZYJMju22Oxg9EHDSnrtRij04wpz8oEtUkO-JOsDMYtJ8xz-mmtHqRGX81p_n74JsUE-nFiSGojOwHhTC4cuYBGCol91_xwmCKzILH7pe2CrogTrcaY1I' }}
-                    style={styles.offerBannerImage}
-                    imageStyle={{ borderRadius: 16 }}
-                >
-                    <View style={styles.gradientOverlay}>
-                        <Text style={styles.offerTitle}>50% OFF</Text>
-                        <Text style={styles.offerSubtitle}>on your first order</Text>
-                    </View>
-                </ImageBackground>
-            </TouchableOpacity>
-
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchInputWrapper}>
-                    <MaterialIcons name="search" size={22} color="#8a7260" style={{ marginRight: 8 }} />
-                    <TextInput
-                        placeholder="Restaurants or items"
-                        placeholderTextColor="#8a7260"
-                        style={styles.searchInput}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                </View>
-            </View>
-
-            {/* Categories */}
-            <FlatList
-                horizontal
-                data={categories}
-                renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.categoryChip}>
-                        <MaterialIcons name={item.icon} size={20} color="#181411" />
-                        <Text style={styles.categoryText}>{item.name}</Text>
-                    </TouchableOpacity>
-                )}
-                keyExtractor={item => item.id}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoriesContainer}
-            />
-
-            <Text style={styles.sectionTitle}>Featured Shops</Text>
-            <FlatList
-                horizontal
-                data={filteredFeaturedShops}
-                renderItem={renderFeaturedShop}
-                keyExtractor={item => item.id}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.featuredContainer}
-            />
-
-            <Text style={styles.sectionTitle}>All Restaurants</Text>
-        </>
-    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -159,12 +221,17 @@ const UserHomeScreen = () => {
         </View>
 
         <FlatList
-            data={filteredRestaurants}
-            renderItem={renderAllRestaurants}
-            keyExtractor={(item) => item.id}
-            ListHeaderComponent={renderHeader}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContentContainer}
+          data={filteredRestaurants}
+          renderItem={renderAllRestaurants}
+          keyExtractor={(item) => item.user_id}
+          ListHeaderComponent={renderHeader}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContentContainer}
+          ListEmptyComponent={
+            <Text style={styles.noResultsText}>
+              {searchQuery ? 'No restaurants found for your search' : 'No restaurants available'}
+            </Text>
+          }
         />
       </View>
     </SafeAreaView>
@@ -348,6 +415,17 @@ const styles = StyleSheet.create({
       color: '#8a7260',
       marginLeft: 4,
       fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noResultsText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 20,
+    fontSize: 16,
   },
 });
 
