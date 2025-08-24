@@ -9,10 +9,19 @@ import {
   Platform,
   StatusBar,
   Image,
+  Alert,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import supabase from '../../SupabaseClient';// Adjust the import based on your project structure
 
 const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackOrder?: () => void }) => {
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert('Logout Error', error.message);
+    }
+  };
+
   const menuItems = [
     { id: '1', title: 'Track Your Order', icon: 'local-shipping', onPress: onTrackOrder },
     { id: '2', title: 'Order History', icon: 'history', onPress: () => {} },
@@ -21,7 +30,7 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
     { id: '5', title: 'Notifications', icon: 'notifications', onPress: () => {} },
     { id: '6', title: 'Help & Support', icon: 'help', onPress: () => {} },
     { id: '7', title: 'Settings', icon: 'settings', onPress: () => {} },
-    { id: '8', title: 'Logout', icon: 'logout', onPress: () => {} },
+    { id: '8', title: 'Logout', icon: 'logout', onPress: handleLogout },
   ];
 
   return (

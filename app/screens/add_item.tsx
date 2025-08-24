@@ -69,19 +69,19 @@ const AddItemScreen: React.FC = () => {
 
   const navigation = useNavigation();
 
-  // ---- Pick Image ----
-    const pickImage = async () => {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
+const pickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'], // ← Use literal string(s) here
+    allowsEditing: true,
+    aspect: [4, 3],
+    quality: 1,
+  });
 
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      }
-    };
+  if (!result.canceled) {
+    setImage(result.assets[0].uri);
+  }
+};
+
 
   // ---- Save Item ----
 const saveItem = async () => {

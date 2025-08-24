@@ -12,12 +12,15 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // FIX: If you see an error on the line below, it's likely because the type
 // definitions for react-native-vector-icons are not installed.
 // Run this command in your terminal to fix it:
 // npm install @types/react-native-vector-icons --save-dev
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { RootStackParamList } from '../../App';
 
 const categories = [
     { id: '1', name: 'Offers', icon: 'local-offer' },
@@ -41,7 +44,9 @@ const allRestaurants = [
 ];
 
 
-const UserHomeScreen = ({ onNavigateToCheckout, onNavigateToShop, onNavigateToProfile }: { onNavigateToCheckout?: () => void, onNavigateToShop?: (shop: any) => void, onNavigateToProfile?: () => void }) => {
+const UserHomeScreen = () => {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
     const [searchQuery, setSearchQuery] = React.useState('');
 
     const filteredFeaturedShops = featuredShops.filter(shop => 
@@ -53,7 +58,7 @@ const UserHomeScreen = ({ onNavigateToCheckout, onNavigateToShop, onNavigateToPr
     );
 
     const renderFeaturedShop = ({ item }: { item: typeof featuredShops[0] }) => (
-        <TouchableOpacity style={styles.featuredShopContainer} onPress={() => onNavigateToShop?.(item)}>
+        <TouchableOpacity style={styles.featuredShopContainer} onPress={() => navigation.navigate('RestaurantMenu', { shopId: item.id, shopName: item.name })}>
             <ImageBackground source={{ uri: item.image }} style={styles.featuredShopImage} imageStyle={{ borderRadius: 12 }}>
                 <View style={styles.featuredGradientOverlay}>
                     <Text style={styles.featuredShopName}>{item.name}</Text>
@@ -67,7 +72,7 @@ const UserHomeScreen = ({ onNavigateToCheckout, onNavigateToShop, onNavigateToPr
     );
 
     const renderAllRestaurants = ({ item }: { item: typeof allRestaurants[0] }) => (
-        <TouchableOpacity style={styles.restaurantContainer} onPress={() => onNavigateToShop?.(item)}>
+        <TouchableOpacity style={styles.restaurantContainer} onPress={() => navigation.navigate('RestaurantMenu', { shopId: item.id, shopName: item.name })}>
             <Image source={{ uri: item.image }} style={styles.restaurantImage} />
             <View style={styles.restaurantDetails}>
                 <Text style={styles.restaurantName}>{item.name}</Text>
@@ -144,11 +149,11 @@ const UserHomeScreen = ({ onNavigateToCheckout, onNavigateToShop, onNavigateToPr
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onNavigateToProfile}>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
             <MaterialIcons name="person" size={24} color="#050301ff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Own Store</Text>
-          <TouchableOpacity onPress={onNavigateToCheckout}>
+          <TouchableOpacity onPress={() => navigation.navigate('Checkout')}>
             <MaterialIcons name="shopping-cart" size={24} color="#050301ff" />
           </TouchableOpacity>
         </View>

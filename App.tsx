@@ -202,6 +202,7 @@ import TrackOrderScreen from './app/UserScreens/track_order';
 import ProfileScreen from './app/UserScreens/profile';
 
 import VendorStack from './app/StackNavigator/VendorStack';
+import RestaurantMenuScreen from './app/UserScreens/shops';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -231,6 +232,9 @@ export type RootStackParamList = {
   Shops: undefined;
   TrackOrder: undefined;
   Profile: undefined;
+
+  // --- Restaurant Menu Screen ---
+  RestaurantMenu: { shopId: string; shopName: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -306,6 +310,7 @@ export default function App() {
               <Stack.Screen name="Shops" component={ShopsScreen} />
               <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
               <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="RestaurantMenu" component={RestaurantMenuScreen} />
             </>
           )}
         </Stack.Navigator>

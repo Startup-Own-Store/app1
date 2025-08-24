@@ -27,7 +27,7 @@ const popularItems = [
 
 const menuTabs = ['Popular', 'Appetizers', 'Main Courses', 'Desserts', 'Drinks'];
 
-const RestaurantMenuScreen = ({ onBack, shop, onNavigateToCheckout, onNavigateToFoodDetails }: { onBack?: () => void, shop?: any, onNavigateToCheckout?: () => void, onNavigateToFoodDetails?: (food: any) => void }) => {
+const RestaurantMenuScreen = ({ navigation, shop, onNavigateToCheckout, onNavigateToFoodDetails }: { navigation: any, shop?: any, onNavigateToCheckout?: () => void, onNavigateToFoodDetails?: (food: any) => void }) => {
     const [activeTab, setActiveTab] = useState('Popular');
 
     const renderMenuItem = ({ item }: { item: typeof popularItems[0] }) => (
@@ -77,6 +77,10 @@ const RestaurantMenuScreen = ({ onBack, shop, onNavigateToCheckout, onNavigateTo
             </View>
         </>
     );
+
+    const onBack = () => {
+      navigation.goBack();
+    };
 
   return (
     <SafeAreaView style={styles.safeArea}>
