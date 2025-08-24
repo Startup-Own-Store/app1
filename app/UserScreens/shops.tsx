@@ -50,7 +50,7 @@ interface RestaurantMenuScreenProps {
 
 const menuTabs = ['Popular', 'Appetizers', 'Main Courses', 'Desserts', 'Drinks'];
 
-const RestaurantMenuScreen = ({ navigation, route, onNavigateToCheckout, onNavigateToFoodDetails }: RestaurantMenuScreenProps) => {
+const RestaurantMenuScreen = ({ navigation, route, onNavigateToCheckout }: RestaurantMenuScreenProps) => {
   const [activeTab, setActiveTab] = useState('Popular');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
@@ -122,10 +122,22 @@ const RestaurantMenuScreen = ({ navigation, route, onNavigateToCheckout, onNavig
     }
   };
 
+const handleFoodItemPress = (food: MenuItem) => {
+    navigation.navigate('ProductDetail', { 
+      food: {
+        id: food.id,
+        name: food.item_name,
+        description: food.description,
+        price: food.price,
+        image: food.image_url || 'https://via.placeholder.com/300x200?text=Food'
+      }
+    });
+  };
+
   const renderMenuItem = ({ item }: { item: MenuItem }) => (
     <TouchableOpacity 
       style={styles.menuItemContainer} 
-      onPress={() => onNavigateToFoodDetails?.(item)}
+      onPress={() => handleFoodItemPress(item)}
       disabled={!item.available}
     >
       <View style={styles.menuItemTextContainer}>
