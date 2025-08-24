@@ -9,6 +9,7 @@ import {
   FlatList,
   Platform,
   StatusBar,
+  Alert,
 } from 'react-native';
 
 // FIX: If you see an error on the line below, it's likely because the type
@@ -16,6 +17,7 @@ import {
 // Run this command in your terminal to fix it:
 // npm install @types/react-native-vector-icons --save-dev
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import supabase from '../../SupabaseClient';
 
 // Combine all screen elements into a single data array for FlatList
 const dashboardSections = [
@@ -31,6 +33,13 @@ const dashboardSections = [
 
 const VendorDashboardScreen = () => {
     const [revenueTimeframe, setRevenueTimeframe] = useState('Today');
+
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            Alert.alert('Logout Error', error.message);
+        }
+    };
 
     const renderDashboardItem = ({ item }: { item: any }) => {
         switch(item.type) {
@@ -91,8 +100,8 @@ const VendorDashboardScreen = () => {
                 style={styles.avatar}
             />
             <Text style={styles.headerTitle}>Dashboard</Text>
-            <TouchableOpacity>
-                <MaterialIcons name="settings" size={24} color="#181410" />
+            <TouchableOpacity onPress={handleLogout}>
+                <MaterialIcons name="logout" size={24} color="#181410" />
             </TouchableOpacity>
         </View>
 
