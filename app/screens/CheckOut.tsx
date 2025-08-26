@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,122 +9,226 @@ import {
   FlatList,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
-
-// FIX: If you see an error on the line below, it's likely because the type
-// definitions for react-native-vector-icons are not installed.
-// Run this command in your terminal to fix it:
-// npm install @types/react-native-vector-icons --save-dev
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
+import supabase from '../../SupabaseClient';
 
-const orderSummaryItems = [
-    { id: 'summary_1', name: 'Chicken Sandwich × 1', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuChYUZPg7ICTEoXdBpe33V6NvtbP15G_wql4t_HSw5NMVHO0KXi1idsTW8TbsXEpC6JdzJpIcRhCOK0HgiOnLl7WiZ4tZMsOqAlkkIo5VJfCuTQBR1x1pZb-1CoU6eFLFxdStzXAMOYu2v3EnRVTmKxwTOWhMsSoiM_v9dLk1gogiQPEIJgpaMDlD-lw4Zrt4iT7qlUPem434PIypzKpOBtP4yw8hKb3DxWrqREcdEZhc7juSHo0BaIXIU0xjmeTMrLVkr0hkmtIFtQ' },
-    { id: 'summary_2', name: 'Fries × 1', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAY6VNSC0XkvJiVKs54ShroscdZLUV1oCnlwjmJCMAQcaSQ_SSrX-x08zCjlTyS16HuOWy8fwtLY62pOiDxVfL_e5Ia57RvmNovqSBabdRPbQE0ZMQQRfoB4dUEIGtNcXITi3AgDAfomaHPkWToktcj5vSjdoIjlsM_sP7ACkYDa98G1CrScsmEJpI5oRAkq83ZTBqCmADpC8lW2v3KG7cPIl6A5r_AMfEf1RTCwLlsTtxnGKDoBaIOjdaUVzvM2hVS9C88NWJSK9ON' },
-    { id: 'summary_3', name: 'Coke × 1', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAKHJtXa7AmIxR0uGlg9Ra3nVJO-6Xk57s8EXKp84VvgztClbc83S9oXw4Dsa3sr8lkKT7FDcfjWF6md4a6oXCt9zsdzraCBa4W1-leDH5H20SDyZvyfFZUzFkSHTA0JUB4mYQNEDi0ly89P6xGa6vk5gVBALqxrY7Yoin6-QJLNk3xIStg-BACoDa3qYZ9MOUPg38Az3S8wB2R4-52bJobSWIHxW7P8pLY6RBWc-b0mbMTV_jZR0cAqkmwq3WfAfutfbV_DMLCccUc' },
-];
+interface OrderItem {
+  order_item_id: string;
+  order_id: string;
+  item_name: string;
+  quantity: number;
+  price: number;
+}
 
-// Combine all data into a single array for FlatList
-const listData = [
-    { type: 'orderInfo', id: 'orderInfo' },
+const OrderAcceptedScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute();
+  const { order } = route.params as { order: any };
+  
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch order items from the database
+  useEffect(() => {
+    const fetchOrderItems = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.order_id)
+          .order('item_name');
+
+        if (error) {
+          console.error('Error fetching order items:', error);
+          return;
+        }
+
+        setOrderItems(data || []);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderItems();
+  }, [order.order_id]);
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  const handleRejectOrder = () => {
+    console.log('Reject order:', order.order_id);
+  };
+
+  const handleReadyForPickup = () => {
+    console.log('Ready for pickup:', order.order_id);
+  };
+
+  // Prepare order summary items from the database
+  const orderSummaryItems = orderItems.map(item => ({
+    id: item.order_item_id,
+    name: `${item.item_name} × ${item.quantity}`,
+    image: 'https://via.placeholder.com/40x40?text=Food', // You can add images to your order_items table later
+    price: item.price * item.quantity,
+    quantity: item.quantity
+  }));
+
+  const totalPrice = orderSummaryItems.reduce((total, item) => total + item.price, 0);
+
+  // Combine all data into a single array for FlatList
+  const listData = [
+    { type: 'orderInfo', id: 'orderInfo', orderId: order.order_id, createdAt: order.created_at },
     { type: 'header', id: 'header_details', title: 'Order Details' },
-    { type: 'detailsGrid', id: 'detailsGrid' },
+    { type: 'detailsGrid', id: 'detailsGrid', order },
     { type: 'header', id: 'header_summary', title: 'Order Summary' },
     ...orderSummaryItems.map(item => ({ type: 'summaryItem', ...item })),
-    { type: 'total', id: 'total', price: '$21.47' },
+    { type: 'total', id: 'total', price: totalPrice },
     { type: 'header', id: 'header_contact', title: 'Contact' },
     { type: 'contact', id: 'contact_customer', icon: 'phone', text: 'Call Customer' },
     { type: 'contact', id: 'contact_delivery', icon: 'delivery-dining', text: 'Contact Delivery Person' },
     { type: 'header', id: 'header_notes', title: 'Notes' },
     { type: 'notes', id: 'notes', text: 'No onions on the sandwich.' },
-];
+  ];
 
-const OrderAcceptedScreen = () => {
+  const renderItem = ({ item }: { item: any }) => {
+    switch (item.type) {
+      case 'orderInfo':
+        return (
+          <>
+            <Text style={styles.orderInfo}>Order #{item.orderId.slice(0, 8)}</Text>
+            <Text style={styles.orderInfo}>
+              {new Date(item.createdAt).toLocaleTimeString()} · {new Date(item.createdAt).toLocaleDateString()}
+            </Text>
+          </>
+        );
+      case 'header':
+        return <Text style={styles.sectionTitle}>{item.title}</Text>;
+      case 'detailsGrid':
+        return (
+          <View style={styles.detailsGridContainer}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Order ID</Text>
+              <Text style={styles.detailValue}>#{item.order.order_id.slice(0, 8)}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Customer</Text>
+              <Text style={styles.detailValue}>{item.order.customer_name}</Text>
+            </View>
+            <View style={[styles.detailItem, {flexBasis: '100%'}]}>
+              <Text style={styles.detailLabel}>Delivery Address</Text>
+              <Text style={styles.detailValue}>{item.order.delivery_address}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status</Text>
+              <Text style={[styles.detailValue, { color: 
+                item.order.status === 'pending' ? '#ffc107' :
+                item.order.status === 'accepted' ? '#17a2b8' :
+                item.order.status === 'completed' ? '#28a745' : '#dc3545'
+              }]}>
+                {item.order.status?.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        );
+      case 'summaryItem':
+        return (
+          <View style={styles.listItemContainer}>
+            <Image source={{ uri: item.image }} style={styles.orderItemImage} />
+            <View style={styles.itemDetails}>
+              <Text style={styles.listItemTitle}>{item.name}</Text>
+              <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+            </View>
+          </View>
+        );
+      case 'total':
+        return (
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalText}>Total</Text>
+            <Text style={styles.totalText}>${item.price.toFixed(2)}</Text>
+          </View>
+        );
+      case 'contact':
+        return (
+          <TouchableOpacity style={styles.contactItemContainer}>
+            <View style={styles.contactDetails}>
+              <View style={styles.iconContainer}>
+                <MaterialIcons name={item.icon as any} size={24} color="#1b140d" />
+              </View>
+              <Text style={styles.listItemTitle}>{item.text}</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={28} color="#1b140d" />
+          </TouchableOpacity>
+        );
+      case 'notes':
+        return <Text style={styles.notesText}>{item.text}</Text>;
+      default:
+        return null;
+    }
+  };
 
-    const renderItem = ({ item }: { item: any }) => {
-        switch (item.type) {
-            case 'orderInfo':
-                return (
-                    <>
-                        <Text style={styles.orderInfo}>Order #123456</Text>
-                        <Text style={styles.orderInfo}>1 min ago</Text>
-                    </>
-                );
-            case 'header':
-                return <Text style={styles.sectionTitle}>{item.title}</Text>;
-            case 'detailsGrid':
-                return (
-                    <View style={styles.detailsGridContainer}>
-                        <View style={styles.detailItem}><Text style={styles.detailLabel}>Order ID</Text><Text style={styles.detailValue}>#12345</Text></View>
-                        <View style={styles.detailItem}><Text style={styles.detailLabel}>Customer</Text><Text style={styles.detailValue}>Liam Harper</Text></View>
-                        <View style={[styles.detailItem, {flexBasis: '100%'}]}><Text style={styles.detailLabel}>Accepted At</Text><Text style={styles.detailValue}>10:30 AM</Text></View>
-                    </View>
-                );
-            case 'summaryItem':
-                return (
-                    <View style={styles.listItemContainer}>
-                        <Image source={{ uri: item.image }} style={styles.orderItemImage} />
-                        <Text style={styles.listItemTitle}>{item.name}</Text>
-                    </View>
-                );
-            case 'total':
-                return (
-                    <View style={styles.totalContainer}>
-                        <Text style={styles.totalText}>Total</Text>
-                        <Text style={styles.totalText}>{item.price}</Text>
-                    </View>
-                );
-            case 'contact':
-                return (
-                    <TouchableOpacity style={styles.contactItemContainer}>
-                        <View style={styles.contactDetails}>
-                            <View style={styles.iconContainer}>
-                                <MaterialIcons name={item.icon} size={24} color="#1b140d" />
-                            </View>
-                            <Text style={styles.listItemTitle}>{item.text}</Text>
-                        </View>
-                        <MaterialIcons name="chevron-right" size={28} color="#1b140d" />
-                    </TouchableOpacity>
-                );
-            case 'notes':
-                 return <Text style={styles.notesText}>{item.text}</Text>;
-            default:
-                return null;
-        }
-    };
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text>Loading order details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleBack}>
             <MaterialIcons name="arrow-back" size={24} color="#1b140d" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Order Accepted</Text>
+          <Text style={styles.headerTitle}>Order Details</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <FlatList
-            data={listData}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
+          data={listData}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
         />
         
         {/* Footer Buttons */}
-        <View style={styles.footer}>
-            <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#f3ede7' }]}>
-                <Text style={[styles.footerButtonText, { color: '#1b140d' }]}>Reject Order</Text>
+        {order.status === 'accepted' && (
+          <View style={styles.footer}>
+            <TouchableOpacity 
+              style={[styles.footerButton, { backgroundColor: '#f3ede7' }]}
+              onPress={handleRejectOrder}
+            >
+              <Text style={[styles.footerButtonText, { color: '#1b140d' }]}>Reject Order</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#ec8627' }]}>
-                <Text style={[styles.footerButtonText, { color: '#1b140d' }]}>Ready for Pickup</Text>
+            <TouchableOpacity 
+              style={[styles.footerButton, { backgroundColor: '#ec8627' }]}
+              onPress={handleReadyForPickup}
+            >
+              <Text style={[styles.footerButtonText, { color: '#1b140d' }]}>Ready for Pickup</Text>
             </TouchableOpacity>
-        </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
 };
+
+
+
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -272,6 +376,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: "'Work Sans', sans-serif",
+  },
+    itemDetails: {
+    flex: 1,
+  },
+  itemPrice: {
+    fontSize: 14,
+    color: '#9a714c',
+    fontFamily: "'Work Sans', sans-serif",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

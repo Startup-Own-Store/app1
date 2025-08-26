@@ -1,126 +1,3 @@
-// import React from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   TouchableOpacity,
-//   SafeAreaView,
-//   FlatList,
-//   Platform,
-//   StatusBar,
-// } from 'react-native';
-
-// // FIX: If you see an error on the line below, it's likely because the type
-// // definitions for react-native-vector-icons are not installed.
-// // Run this command in your terminal to fix it:
-// // npm install @types/react-native-vector-icons --save-dev
-// import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-// const currentOrders = [
-//   { id: '1', name: 'Liam Carteraqw', orderId: '123456', time: '10:30 AM', status: 'Accepted', items: 2, price: '$25.50' },
-//     { id: '2', name: 'Olivia Bennett', orderId: '789012', time: '11:15 AM', status: 'Preparing', items: 3, price: '$32.75' },
-//     { id: '3', name: 'Noah Thompson', orderId: '345678', time: '12:00 PM', status: 'Ready for Pickup', items: 1, price: '$15.99' },
-//     { id: '4', name: 'Ava Harper', orderId: '901234', time: '12:45 PM', status: 'Out for Delivery', items: 4, price: '$45.20' },
-// ];
-
-// const OrdersScreen = () => {
-
-//     const renderOrderItem = ({ item }: { item: typeof currentOrders[0] }) => (
-//         <TouchableOpacity style={styles.orderItemContainer}>
-//             <View style={styles.orderDetails}>
-//                 <Text style={styles.customerName}>{item.name}</Text>
-//                 <Text style={styles.orderInfo}>Order #{item.orderId} · {item.time} · {item.status}</Text>
-//                 <Text style={styles.orderInfo}>{item.items} items · {item.price}</Text>
-//             </View>
-//             <MaterialIcons name="chevron-right" size={28} color="#191410" />
-//         </TouchableOpacity>
-//     );
-
-//   return (
-//     <SafeAreaView style={styles.safeArea}>
-//       <View style={styles.container}>
-//         {/* Header */}
-//         <View style={styles.header}>
-//           <TouchableOpacity>
-//             <MaterialIcons name="arrow-back" size={24} color="#191410" />
-//           </TouchableOpacity>
-//           <Text style={styles.headerTitle}>Orders</Text>
-//           <View style={{ width: 24 }} />
-//         </View>
-
-//         <FlatList
-//             data={currentOrders}
-//             renderItem={renderOrderItem}
-//             keyExtractor={item => item.id}
-//             showsVerticalScrollIndicator={false}
-//             ItemSeparatorComponent={() => <View style={styles.separator} />}
-//         />
-//       </View>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   safeArea: {
-//     flex: 1,
-//     backgroundColor: '#fbfaf9',
-//     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-//   },
-//   container: {
-//     flex: 1,
-//   },
-//   // Header
-//   header: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//     paddingHorizontal: 16,
-//     paddingVertical: 12,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#e3dbd4',
-//   },
-//   headerTitle: {
-//     fontSize: 18,
-//     fontWeight: '700',
-//     color: '#191410',
-//     fontFamily: "'Work Sans', sans-serif",
-//   },
-//   // Order List Item
-//   orderItemContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     paddingHorizontal: 16,
-//     paddingVertical: 16,
-//     backgroundColor: '#fbfaf9',
-//   },
-//   orderDetails: {
-//     flex: 1,
-//     gap: 4,
-//   },
-//   customerName: {
-//     fontSize: 16,
-//     fontWeight: '500',
-//     color: '#191410',
-//     fontFamily: "'Work Sans', sans-serif",
-//   },
-//   orderInfo: {
-//     fontSize: 14,
-//     color: '#8b725b',
-//     fontFamily: "'Work Sans', sans-serif",
-//   },
-//   separator: {
-//     height: 1,
-//     backgroundColor: '#e3dbd4',
-//     marginLeft: 16,
-//   },
-// });
-
-// export default OrdersScreen;
-
-
-
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -132,202 +9,377 @@ import {
   Platform,
   StatusBar,
   ScrollView,
+  RefreshControl,
 } from "react-native";
-import { MaterialIcons } from '@expo/vector-icons'; // Assuming Expo for icons
+import { MaterialIcons } from '@expo/vector-icons';
+import supabase from '../../SupabaseClient'; // Import your Supabase client
 
-// Mock navigation prop type for demonstration
-// In a real app, this would come from your navigation library
 type VendorHomeScreenProps = {
   navigation: {
     navigate: (screen: string, params?: any) => void;
+    goBack: () => void;
   };
 };
 
-// Main component for the Vendor Home Screen
+// Define types
+interface Order {
+  order_id: string;
+  user_id: string;
+  vendor_id: string;
+  total_price: number;
+  delivery_address: string;
+  created_at: string;
+  status?: string;
+  customer_name?: string;
+  items?: OrderItem[];
+}
+
+interface OrderItem {
+  id: string;
+  order_id: string;
+  item_id: string;
+  quantity: number;
+  item_name?: string;
+  price?: number;
+}
+
 const VendorHomeScreen: React.FC<VendorHomeScreenProps> = ({ navigation }) => {
-  // State to manage if the shop is open or closed
   const [isShopOpen, setIsShopOpen] = useState(false);
-  // State to hold a new incoming order object
-  const [newOrder, setNewOrder] = useState<any | null>(null);
-  // State to hold a list of accepted, in-progress orders
-  const [currentOrders, setCurrentOrders] = useState<any[]>([]);
-  // State for dashboard metrics
-  const [todaysEarnings, setTodaysEarnings] = useState(0);
-  const [completedOrdersCount, setCompletedOrdersCount] = useState(0);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Effect to simulate receiving a new order when the shop is open
-  useEffect(() => {
-    if (isShopOpen && !newOrder && currentOrders.length < 3) { // Cap at 3 for demo
-      const timer = setTimeout(() => {
-        // Mock order data
-        const mockOrder = {
-          id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-          items: "2x Cappuccino, 1x Croissant",
-          total: 12.50,
-        };
-        setNewOrder(mockOrder);
-      }, 5000); // New order arrives after 5 seconds
+  // Fetch orders from the database
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current vendor's user_id (you might need to adjust this based on your auth setup)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      return () => clearTimeout(timer); // Cleanup timer on component unmount or state change
-    }
-  }, [isShopOpen, newOrder, currentOrders]);
+      // Fetch orders for this vendor
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('vendor_id', user.id)
+        .order('created_at', { ascending: false });
 
-
-  // Toggles the shop's open/closed status
-  const handleToggleShopStatus = () => {
-    setIsShopOpen((previousState) => {
-      const newState = !previousState;
-      if (!newState) {
-        setNewOrder(null); // Clear any pending new order when closing the shop
+      if (ordersError) {
+        console.error('Error fetching orders:', ordersError);
+        return;
       }
-      return newState;
-    });
-  };
 
-  // Handles accepting a new order
-  const handleAcceptOrder = () => {
-    if (newOrder) {
-      // Add to current orders list to be processed
-      setCurrentOrders((prevOrders) => [newOrder, ...prevOrders]);
-      // Clear the new order notification
-      setNewOrder(null);
+      // For each order, fetch the customer name and order items
+      const ordersWithDetails = await Promise.all(
+        (ordersData || []).map(async (order) => {
+          // Fetch customer name
+          const { data: customerData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', order.user_id)
+            .single();
+
+          // Fetch order items (you'll need to create an order_items table)
+          const { data: itemsData } = await supabase
+            .from('order_items')
+            .select(`
+              id,
+              quantity,
+              items (
+                item_name,
+                price
+              )
+            `)
+            .eq('order_id', order.order_id);
+
+          return {
+            ...order,
+            customer_name: customerData?.full_name || 'Customer',
+            items: itemsData || [],
+            status: 'pending' // Default status
+          };
+        })
+      );
+
+      setOrders(ordersWithDetails);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  // Handles rejecting a new order
-  const handleRejectOrder = () => {
-    setNewOrder(null); // Simply clear the new order
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // Set up real-time subscription for new orders
+ // Set up real-time subscription for new orders
+useEffect(() => {
+  const setupRealtimeSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const subscription = supabase
+        .channel('orders_channel')
+        .on('postgres_changes', 
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'orders',
+            filter: `vendor_id=eq.${user.id}`
+          }, 
+          (payload) => {
+            console.log('New order received!', payload.new);
+            fetchOrders(); // Refresh orders when new one is added
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error('Error setting up real-time subscription:', error);
+    }
   };
 
-  // Handles completing an order from the current list
-  const handleCompleteOrder = (orderToComplete: any) => {
-    // Update dashboard stats with the completed order's details
-    setTodaysEarnings((prevEarnings) => prevEarnings + orderToComplete.total);
-    setCompletedOrdersCount((prevCount) => prevCount + 1);
+  setupRealtimeSubscription();
+}, []);
 
-    // Remove the order from the current (in-progress) orders list
-    setCurrentOrders((prevOrders) =>
-      prevOrders.filter((order) => order.id !== orderToComplete.id)
-    );
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchOrders();
   };
 
-
-  // Placeholder for navigating to order details screen
-  const handleViewDetails = (orderId: string) => {
-    console.log("Navigating to details for order:", orderId);
-    // navigation.navigate('OrderDetails', { orderId: orderId });
+  const handleToggleShopStatus = () => {
+    setIsShopOpen((previousState) => !previousState);
   };
 
-  // Reusable component for bottom navigation items
-  const BottomNavItem = ({ iconName, label, onPress }: { iconName: keyof typeof MaterialIcons.glyphMap, label: string, onPress: () => void }) => (
-    <TouchableOpacity onPress={onPress} style={styles.navItem}>
-      <MaterialIcons name={iconName} size={24} color={"#9b7049"} />
-      <Text style={styles.navLabel}>{label}</Text>
-    </TouchableOpacity>
-  );
+  const handleAcceptOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'accepted' })
+        .eq('order_id', orderId);
 
-  // Component to render the new dashboard summary
+      if (error) {
+        console.error('Error accepting order:', error);
+        return;
+      }
+
+      // Update local state
+      setOrders(orders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'accepted' }
+          : order
+      ));
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleRejectOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'rejected' })
+        .eq('order_id', orderId);
+
+      if (error) {
+        console.error('Error rejecting order:', error);
+        return;
+      }
+
+      setOrders(orders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'rejected' }
+          : order
+      ));
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleCompleteOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'completed' })
+        .eq('order_id', orderId);
+
+      if (error) {
+        console.error('Error completing order:', error);
+        return;
+      }
+
+      setOrders(orders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'completed' }
+          : order
+      ));
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleViewDetails = (order: Order) => {
+    navigation.navigate('OrderDetails', { order });
+  };
+
+  // Filter orders by status
+  const pendingOrders = orders.filter(order => order.status === 'pending');
+  const acceptedOrders = orders.filter(order => order.status === 'accepted');
+  const completedOrders = orders.filter(order => order.status === 'completed');
+
   const Dashboard = () => (
     <View style={styles.dashboardContainer}>
       <View style={styles.dashboardCard}>
-        <Text style={styles.dashboardValue}>${todaysEarnings.toFixed(2)}</Text>
-        <Text style={styles.dashboardLabel}>Today's Earnings</Text>
+        <Text style={styles.dashboardValue}>{orders.length}</Text>
+        <Text style={styles.dashboardLabel}>Total Orders</Text>
       </View>
       <View style={styles.dashboardCard}>
-        <Text style={styles.dashboardValue}>{completedOrdersCount}</Text>
-        <Text style={styles.dashboardLabel}>Completed Orders</Text>
+        <Text style={styles.dashboardValue}>{pendingOrders.length}</Text>
+        <Text style={styles.dashboardLabel}>Pending</Text>
+      </View>
+      <View style={styles.dashboardCard}>
+        <Text style={styles.dashboardValue}>{completedOrders.length}</Text>
+        <Text style={styles.dashboardLabel}>Completed</Text>
       </View>
     </View>
   );
 
-  // Component to render the new order notification card
-  const NewOrderNotification = () => (
-    newOrder && (
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>New Order Received!</Text>
-        <Text style={styles.cardText}>Order ID: {newOrder.id}</Text>
-        <Text style={styles.cardText}>Items: {newOrder.items}</Text>
-        <Text style={styles.cardText}>Total: ${newOrder.total.toFixed(2)}</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={[styles.button, styles.acceptButton]} onPress={handleAcceptOrder}>
-            <Text style={styles.buttonText}>Accept</Text>
+const OrderCard = ({ order }: { order: Order }) => {
+  const handleCardPress = () => {
+    handleViewDetails(order);
+  };
+
+  const handleButtonPress = (e: any, callback: () => void) => {
+    e.stopPropagation(); // Prevent the card press from triggering
+    callback();
+  };
+
+  return (
+    <TouchableOpacity style={styles.card} onPress={handleCardPress} activeOpacity={0.9}>
+      <View style={styles.orderHeader}>
+        <Text style={styles.orderId}>Order #{order.order_id.slice(0, 8)}</Text>
+        <Text style={[styles.statusBadge, 
+          { backgroundColor: 
+            order.status === 'pending' ? '#ffc107' :
+            order.status === 'accepted' ? '#17a2b8' :
+            order.status === 'completed' ? '#28a745' : '#dc3545'
+          }]}>
+          {order.status?.toUpperCase()}
+        </Text>
+      </View>
+      
+      <Text style={styles.customerName}>{order.customer_name}</Text>
+      <Text style={styles.orderInfo}>Total: ${order.total_price.toFixed(2)}</Text>
+      <Text style={styles.orderInfo}>Address: {order.delivery_address}</Text>
+      <Text style={styles.orderInfo}>
+        {order.items?.length || 0} items · {new Date(order.created_at).toLocaleTimeString()}
+      </Text>
+
+      <View style={styles.buttonContainer}>
+        {order.status === 'pending' && (
+          <>
+            <TouchableOpacity 
+              style={[styles.button, styles.acceptButton]} 
+              onPress={(e) => handleButtonPress(e, () => handleAcceptOrder(order.order_id))}
+            >
+              <Text style={styles.buttonText}>Accept</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.button, styles.rejectButton]} 
+              onPress={(e) => handleButtonPress(e, () => handleRejectOrder(order.order_id))}
+            >
+              <Text style={styles.buttonText}>Reject</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {order.status === 'accepted' && (
+          <TouchableOpacity 
+            style={[styles.button, styles.completeButton]} 
+            onPress={(e) => handleButtonPress(e, () => handleCompleteOrder(order.order_id))}
+          >
+            <Text style={styles.buttonText}>Complete</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, styles.rejectButton]} onPress={handleRejectOrder}>
-            <Text style={styles.buttonText}>Reject</Text>
-          </TouchableOpacity>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading orders...</Text>
         </View>
-      </View>
-    )
-  );
-
-  // Component to render the list of current orders
-  const CurrentOrdersList = () => (
-    <View style={styles.listContainer}>
-      <Text style={styles.listTitle}>Current Orders</Text>
-      {currentOrders.length > 0 ? (
-        currentOrders.map((order) => (
-          <View key={order.id} style={styles.card}>
-            <Text style={styles.cardTextBold}>Order ID: {order.id}</Text>
-            <Text style={styles.cardText}>Items: {order.items}</Text>
-            <View style={styles.orderActionsContainer}>
-                <TouchableOpacity style={styles.detailsButton} onPress={() => handleViewDetails(order.id)}>
-                    <Text style={styles.detailsButtonText}>Details</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.button, styles.completeButton]} onPress={() => handleCompleteOrder(order)}>
-                    <Text style={styles.buttonText}>Complete</Text>
-                </TouchableOpacity>
-            </View>
-          </View>
-        ))
-      ) : (
-        <Text style={styles.noOrdersText}>No active orders right now.</Text>
-      )}
-    </View>
-  );
-
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <MaterialIcons name="arrow-back" size={24} color="#1c140c" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>The Coffee House</Text>
+          <Text style={styles.headerTitle}>Vendor Dashboard</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView>
-            {/* Shop Status Toggle */}
-            <View style={styles.toggleContainer}>
-                <Text style={styles.toggleLabel}>Shop is {isShopOpen ? "Open" : "Closed"}</Text>
-                <Switch
-                    trackColor={{ false: "#f4ede8", true: "#d3bdaF" }}
-                    thumbColor={isShopOpen ? "#9b7049" : "#f4f3f4"}
-                    ios_backgroundColor="#f4ede8"
-                    onValueChange={handleToggleShopStatus}
-                    value={isShopOpen}
-                />
-            </View>
-            <View style={styles.descriptionContainer}>
-                <Text style={styles.descriptionText}>
-                    {isShopOpen
-                    ? "You are currently open and can receive new orders."
-                    : "Your shop is closed. Toggle on to start accepting orders."}
-                </Text>
-            </View>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <Dashboard />
 
-            {/* Dashboard Section */}
-            <Dashboard />
+          <View style={styles.mainContent}>
+            {/* Pending Orders */}
+            {pendingOrders.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Pending Orders ({pendingOrders.length})</Text>
+                {pendingOrders.map(order => (
+                  <OrderCard key={order.order_id} order={order} />
+                ))}
+              </>
+            )}
 
-            {/* Main Content Area */}
-            <View style={styles.mainContent}>
-                {isShopOpen && <NewOrderNotification />}
-                <CurrentOrdersList />
-            </View>
+            {/* Accepted Orders */}
+            {acceptedOrders.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>In Progress ({acceptedOrders.length})</Text>
+                {acceptedOrders.map(order => (
+                  <OrderCard key={order.order_id} order={order} />
+                ))}
+              </>
+            )}
+
+            {/* Completed Orders */}
+            {completedOrders.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Completed ({completedOrders.length})</Text>
+                {completedOrders.map(order => (
+                  <OrderCard key={order.order_id} order={order} />
+                ))}
+              </>
+            )}
+
+            {orders.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <MaterialIcons name="receipt" size={64} color="#ccc" />
+                <Text style={styles.emptyText}>No orders yet</Text>
+              </View>
+            )}
+          </View>
         </ScrollView>
-
       </View>
     </SafeAreaView>
   );
@@ -453,7 +505,7 @@ const styles = StyleSheet.create({
   },
   button: {
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 5,
     alignItems: 'center',
   },
   acceptButton: {
@@ -525,6 +577,57 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#9b7049",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  orderId: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1c140c',
+  },
+  statusBadge: {
+    color: 'white',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1c140c',
+    marginBottom: 4,
+  },
+  orderInfo: {
+    fontSize: 14,
+    color: '#575757',
+    marginBottom: 2,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1c140c',
+    marginBottom: 12,
+    marginTop: 20,
+  },
 });
-
 export default VendorHomeScreen;

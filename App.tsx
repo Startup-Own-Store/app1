@@ -206,6 +206,7 @@ import RestaurantMenuScreen from './app/UserScreens/shops';
 import ProductDetailScreen from './app/UserScreens/food_details';
 import CartScreen from './app/UserScreens/cart';
 import NameInputScreen from './app/UserScreens/NameInputScreen';
+import OrderAcceptedScreen from './app/screens/CheckOut';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -242,6 +243,7 @@ export type RootStackParamList = {
 
   // --- Cart Screen ---
   Cart: undefined;
+  OrderDetails: { order: any };
 
   // --- Name Input Screen ---
   NameInputScreen: undefined;
@@ -304,7 +306,11 @@ export default function App() {
             </>
           ) : userRole === 'vendor' ? (
             // --- Screen for the LOGGED IN VENDOR ---
-            <Stack.Screen name="MainVendor" component={TabNavigatorVendor} />
+            <>
+             <Stack.Screen name="MainVendor" component={TabNavigatorVendor} />
+              <Stack.Screen name="OrderDetails" component={OrderAcceptedScreen} options={{ headerShown: false } }/>
+            </>
+           
           ) : userRole === 'delivery' ? (
             // --- Screen for the LOGGED IN DELIVERY partner ---
             <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />
