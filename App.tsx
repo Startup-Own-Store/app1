@@ -205,6 +205,7 @@ import VendorStack from './app/StackNavigator/VendorStack';
 import RestaurantMenuScreen from './app/UserScreens/shops';
 import ProductDetailScreen from './app/UserScreens/food_details';
 import CartScreen from './app/UserScreens/cart';
+import NameInputScreen from './app/UserScreens/NameInputScreen';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -241,6 +242,9 @@ export type RootStackParamList = {
 
   // --- Cart Screen ---
   Cart: undefined;
+
+  // --- Name Input Screen ---
+  NameInputScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -319,6 +323,7 @@ export default function App() {
                <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }}
         />
               <Stack.Screen name="Cart" component={CartScreen} />
+              <Stack.Screen name="NameInputScreen" component={NameInputScreen} />
             </>
           )}
         </Stack.Navigator>

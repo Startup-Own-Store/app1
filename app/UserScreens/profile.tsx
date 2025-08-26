@@ -15,6 +15,9 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import supabase from '../../SupabaseClient';// Adjust the import based on your project structure
 
 const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackOrder?: () => void }) => {
+  const [userName, setUserName] = React.useState('');
+  const [userPhone, setUserPhone] = React.useState('');
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -32,6 +35,27 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
     { id: '7', title: 'Settings', icon: 'settings', onPress: () => {} },
     { id: '8', title: 'Logout', icon: 'logout', onPress: handleLogout },
   ];
+
+  // Fetch the `Display name` and phone number using Supabase Authentication API
+  React.useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+
+        if (error) {
+          console.error('Error fetching user details:', error);
+          return;
+        }
+
+        setUserName(data.user?.user_metadata?.display_name || '');
+        setUserPhone(data.user?.phone || '');
+      } catch (err) {
+        console.error('Unexpected error:', err);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -51,9 +75,8 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
             <View style={styles.profileImageContainer}>
               <MaterialIcons name="person" size={60} color="#8a7260" />
             </View>
-            <Text style={styles.profileName}>John Doe</Text>
-            <Text style={styles.profileEmail}>john.doe@email.com</Text>
-            <Text style={styles.profilePhone}>+1 (555) 123-4567</Text>
+            <Text style={styles.profileName}>{userName || 'Your Name'}</Text>
+            <Text style={styles.profilePhone}>{userPhone || 'Your Phone'}</Text>
           </View>
 
           {/* Menu Items */}

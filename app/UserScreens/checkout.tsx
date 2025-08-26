@@ -8,39 +8,135 @@ import {
   ScrollView,
   Platform,
   StatusBar,
+  Alert,
+  TextInput,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-
 import { useNavigation, useRoute } from '@react-navigation/native';
+import supabase from '../../SupabaseClient';
 
 const CheckoutScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Get cartItems from route params if passed
-  const cartItems = (route.params as any)?.cartItems || [];
+  const [cartItems, setCartItems] = React.useState<any[]>([]);
   const [selectedPayment, setSelectedPayment] = React.useState('card');
-  const [itemQuantities, setItemQuantities] = React.useState<Record<string, number>>({});
+  const [deliveryAddress, setDeliveryAddress] = React.useState('');
 
-  const items = cartItems.length ? cartItems.map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    price: parseFloat(item.price.replace('$', '')),
-    quantity: itemQuantities[item.id] || 1
-  })) : [];
+  React.useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const session = await supabase.auth.getSession();
+        const userId = session.data?.session?.user?.id;
 
-  const updateQuantity = (itemId: string, change: number) => {
-    setItemQuantities(prev => ({
-      ...prev,
-      [itemId]: Math.max(1, (prev[itemId] || 1) + change)
-    }));
+        if (!userId) {
+          console.error('User not authenticated.');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('cart')
+          .select('item_id, quantity, total_price, vendor_id, items(item_name)') // Added `vendor_id`
+          .eq('user_id', userId);
+
+        if (error) {
+          console.error('Error fetching cart items:', error);
+        } else {
+          setCartItems(data || []);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+      }
+    };
+
+    fetchCartItems();
+  }, []);
+
+  const items = cartItems.map((item: any) => ({
+    name: item.items.item_name,
+    quantity: item.quantity,
+    totalPrice: item.total_price,
+  }));
+
+  const total = items.reduce((sum: number, item: { totalPrice: number }) => sum + item.totalPrice, 0);
+
+  // Update `placeOrder` to create a single order for all cart items
+  const placeOrder = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const userId = session.data?.session?.user?.id;
+
+      if (!userId) {
+        Alert.alert('Error', 'User not authenticated.');
+        return;
+      }
+
+      if (!deliveryAddress) {
+        Alert.alert('Error', 'Please provide a delivery address.');
+        return;
+      }
+
+      if (!cartItems[0]?.vendor_id) {
+        console.error('Cart items:', cartItems); // Log cart items for debugging
+        Alert.alert('Error', 'Vendor information is missing. Please try again.');
+        return;
+      }
+
+      // Insert a single order into the database
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: userId,
+          vendor_id: cartItems[0]?.vendor_id, // Assuming all items have the same vendor_id
+          total_price: total,
+          delivery_address: deliveryAddress,
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('Error creating order:', orderError);
+        Alert.alert('Error', 'Failed to place order.');
+        return;
+      }
+
+      // Insert all cart items as order items with the same `order_id`
+      const orderItems = cartItems.map((item: any) => ({
+        order_id: order.order_id,
+        item_name: item.items.item_name,
+        quantity: item.quantity,
+        price: item.total_price,
+      }));
+
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (orderItemsError) {
+        console.error('Error creating order items:', orderItemsError);
+        Alert.alert('Error', 'Failed to place order items.');
+        return;
+      }
+
+      // Optionally, clear the cart after placing the order
+      const { error: clearCartError } = await supabase
+        .from('cart')
+        .delete()
+        .eq('user_id', userId);
+
+      if (clearCartError) {
+        console.error('Error clearing cart:', clearCartError);
+        Alert.alert('Error', 'Failed to clear cart.');
+        return;
+      }
+
+      Alert.alert('Success', 'Order placed successfully!');
+      navigation.navigate('MainUser' as never);
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    }
   };
-
-  const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + (item.price * item.quantity), 0);
-  const deliveryFee = 2.99;
-  const tax = subtotal * 0.08;
-  const total = subtotal + deliveryFee + tax;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -61,104 +157,35 @@ const CheckoutScreen: React.FC = () => {
             <View style={styles.addressCard}>
               <MaterialIcons name="location-on" size={20} color="#ec8627" />
               <View style={styles.addressDetails}>
-                <Text style={styles.addressText}>123 Main Street</Text>
-                <Text style={styles.addressSubtext}>Apartment 4B, New York, NY 10001</Text>
+                <TextInput
+                  style={styles.addressInput}
+                  placeholder="Enter your delivery address"
+                  value={deliveryAddress}
+                  onChangeText={setDeliveryAddress}
+                />
               </View>
-              <TouchableOpacity>
-                <MaterialIcons name="edit" size={20} color="#8a7260" />
-              </TouchableOpacity>
             </View>
           </View>
 
           {/* Order Items */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Order Summary</Text>
-            {items.map((item: any) => (
-              <View key={item.id} style={styles.orderItem}>
+            {items.map((item, index) => (
+              <View key={index} style={styles.orderItem}>
                 <View style={styles.itemDetails}>
                   <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-                </View>
-                <View style={styles.itemActions}>
-                  <View style={styles.quantityContainer}>
-                    <TouchableOpacity style={styles.quantityButton} onPress={() => updateQuantity(item.id, -1)}>
-                      <MaterialIcons name="remove" size={16} color="#181411" />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityText}>{item.quantity}</Text>
-                    <TouchableOpacity style={styles.quantityButton} onPress={() => updateQuantity(item.id, 1)}>
-                      <MaterialIcons name="add" size={16} color="#181411" />
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity style={styles.deleteButton} onPress={() => {/* Optionally handle remove */}}>
-                    <MaterialIcons name="delete" size={20} color="#e82630" />
-                  </TouchableOpacity>
+                  <Text style={styles.itemQuantity}>Quantity: {item.quantity}</Text>
                 </View>
               </View>
             ))}
           </View>
 
-          {/* Payment Method */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Payment Method</Text>
-            
-            <TouchableOpacity 
-              style={[styles.paymentOption, selectedPayment === 'card' && styles.selectedPayment]}
-              onPress={() => setSelectedPayment('card')}
-            >
-              <MaterialIcons name="credit-card" size={20} color="#181411" />
-              <Text style={styles.paymentText}>Credit Card</Text>
-              <MaterialIcons 
-                name={selectedPayment === 'card' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                size={20} 
-                color="#ec8627" 
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.paymentOption, selectedPayment === 'cash' && styles.selectedPayment]}
-              onPress={() => setSelectedPayment('cash')}
-            >
-              <MaterialIcons name="money" size={20} color="#181411" />
-              <Text style={styles.paymentText}>Cash on Delivery</Text>
-              <MaterialIcons 
-                name={selectedPayment === 'cash' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                size={20} 
-                color="#ec8627" 
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.paymentOption, selectedPayment === 'upi' && styles.selectedPayment]}
-              onPress={() => setSelectedPayment('upi')}
-            >
-              <MaterialIcons name="payment" size={20} color="#181411" />
-              <Text style={styles.paymentText}>UPI Payment</Text>
-              <MaterialIcons 
-                name={selectedPayment === 'upi' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                size={20} 
-                color="#ec8627" 
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Order Summary */}
+          {/* Bill Details */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Bill Details</Text>
             <View style={styles.billRow}>
-              <Text style={styles.billLabel}>Subtotal</Text>
-              <Text style={styles.billValue}>${subtotal.toFixed(2)}</Text>
-            </View>
-            <View style={styles.billRow}>
-              <Text style={styles.billLabel}>Delivery Fee</Text>
-              <Text style={styles.billValue}>${deliveryFee.toFixed(2)}</Text>
-            </View>
-            <View style={styles.billRow}>
-              <Text style={styles.billLabel}>Tax</Text>
-              <Text style={styles.billValue}>${tax.toFixed(2)}</Text>
-            </View>
-            <View style={[styles.billRow, styles.totalRow]}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+              <Text style={styles.billLabel}>Total</Text>
+              <Text style={styles.billValue}>${total.toFixed(2)}</Text>
             </View>
           </View>
         </ScrollView>
@@ -168,7 +195,7 @@ const CheckoutScreen: React.FC = () => {
           <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#f5f2f0' }]} onPress={() => navigation.goBack()}>
             <Text style={[styles.footerButtonText, { color: '#181411' }]}>Add More Items</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#ec8627' }]} onPress={() => {/* Optionally handle place order */}}>
+          <TouchableOpacity style={[styles.footerButton, { backgroundColor: '#ec8627' }]} onPress={placeOrder}>
             <Text style={[styles.footerButtonText, { color: '#ffffff' }]}>Place Order • ${total.toFixed(2)}</Text>
           </TouchableOpacity>
         </View>
@@ -229,15 +256,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
-  addressText: {
+  addressInput: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '600',
     color: '#181411',
-  },
-  addressSubtext: {
-    fontSize: 14,
-    color: '#8a7260',
-    marginTop: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingVertical: 4,
   },
   orderItem: {
     flexDirection: 'row',
@@ -255,88 +280,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#181411',
   },
-  itemPrice: {
+  itemQuantity: {
     fontSize: 14,
     color: '#8a7260',
     marginTop: 2,
-  },
-  itemActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  deleteButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#fff0f0',
-  },
-  quantityButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f5f2f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#181411',
-    marginHorizontal: 16,
-  },
-  paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#f5f2f0',
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  selectedPayment: {
-    backgroundColor: '#fff5e6',
-    borderWidth: 2,
-    borderColor: '#ec8627',
-  },
-  paymentText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#181411',
-    marginLeft: 12,
-  },
-  billRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  billLabel: {
-    fontSize: 16,
-    color: '#8a7260',
-  },
-  billValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#181411',
-  },
-  totalRow: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-    marginTop: 8,
-  },
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#181411',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ec8627',
   },
   bottomContainer: {
     flexDirection: 'row',
@@ -354,6 +301,22 @@ const styles = StyleSheet.create({
   footerButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  billLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#181411',
+  },
+  billValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#181411',
+  },
+  billRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
 });
 

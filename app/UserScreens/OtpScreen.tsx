@@ -97,8 +97,8 @@ const OTPScreen = () => {
         return;
       }
 
-      // Navigate to Home.tsx
-      navigation.navigate('MainUser');
+      // Navigate to NameInputScreen after successful OTP login
+      navigation.navigate('NameInputScreen' as never);
     } catch (err) {
       Alert.alert('An Unexpected Error Occurred', 'Please try again.');
     } finally {

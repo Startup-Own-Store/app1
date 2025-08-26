@@ -215,7 +215,7 @@ const UserHomeScreen = () => {
             <MaterialIcons name="person" size={24} color="#050301ff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Own Store</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Checkout')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
             <MaterialIcons name="shopping-cart" size={24} color="#050301ff" />
           </TouchableOpacity>
         </View>
