@@ -203,6 +203,11 @@ const handleFoodItemPress = (food: MenuItem) => {
     navigation.goBack();
   };
 
+  // Update shopping-cart button to navigate to Cart screen
+  const onNavigateToCart = () => {
+    navigation.navigate('Cart');
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -223,7 +228,8 @@ const handleFoodItemPress = (food: MenuItem) => {
             <MaterialIcons name="arrow-back" size={24} color="#181113" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{vendor?.name || shopName || 'Restaurant'}</Text>
-          <TouchableOpacity onPress={onNavigateToCheckout}>
+          {/* Update TouchableOpacity for shopping-cart */}
+          <TouchableOpacity onPress={onNavigateToCart}>
             <MaterialIcons name="shopping-cart" size={24} color="#181113" />
           </TouchableOpacity>
         </View>

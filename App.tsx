@@ -204,6 +204,7 @@ import ProfileScreen from './app/UserScreens/profile';
 import VendorStack from './app/StackNavigator/VendorStack';
 import RestaurantMenuScreen from './app/UserScreens/shops';
 import ProductDetailScreen from './app/UserScreens/food_details';
+import CartScreen from './app/UserScreens/cart';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -237,6 +238,9 @@ export type RootStackParamList = {
   // --- Restaurant Menu Screen ---
   RestaurantMenu: { shopId: string; shopName: string };
   ProductDetail: { food: any };
+
+  // --- Cart Screen ---
+  Cart: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -296,8 +300,7 @@ export default function App() {
             </>
           ) : userRole === 'vendor' ? (
             // --- Screen for the LOGGED IN VENDOR ---
-            <Stack.Screen name="MainVendor" component={VendorStack} />
-            
+            <Stack.Screen name="MainVendor" component={TabNavigatorVendor} />
           ) : userRole === 'delivery' ? (
             // --- Screen for the LOGGED IN DELIVERY partner ---
             <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />
@@ -315,6 +318,7 @@ export default function App() {
               <Stack.Screen name="RestaurantMenu" component={RestaurantMenuScreen} />
                <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }}
         />
+              <Stack.Screen name="Cart" component={CartScreen} />
             </>
           )}
         </Stack.Navigator>

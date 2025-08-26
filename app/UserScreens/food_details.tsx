@@ -20,7 +20,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-
+import supabase from '../../SupabaseClient'; // Corrected import for Supabase client
 
 
 
@@ -38,6 +38,7 @@ const ProductDetailScreen = ({ onAddToCart, onNavigateToCheckout }: ProductDetai
   const [size, setSize] = useState('Regular');
   const [selectedAddOns, setSelectedAddOns] = useState<Record<string, boolean>>({});
   const [selectedSides, setSelectedSides] = useState<Record<string, boolean>>({});
+  const [quantity, setQuantity] = useState(1); // State for quantity
 
   const productData = {
     image: food?.image || 'https://via.placeholder.com/300x200?text=Food',
@@ -60,29 +61,112 @@ const ProductDetailScreen = ({ onAddToCart, onNavigateToCheckout }: ProductDetai
     navigation.goBack();
   };
 
-  const handleAddToOrder = () => {
-    const orderItem = {
-      id: food?.id || Date.now().toString(),
-      name: productData.title,
-      size,
-      addOns: Object.keys(selectedAddOns).filter(key => selectedAddOns[key]),
-      sides: Object.keys(selectedSides).filter(key => selectedSides[key]),
-      price: productData.price,
-      originalPrice: food?.price // Keep original price for reference
-    };
-    
-    onAddToCart?.(orderItem);
-    Alert.alert('Success', 'Successfully added to cart!', [
-      { 
-        text: 'Continue Shopping', 
-        onPress: handleBack,
-        style: 'cancel'
-      },
-      { 
-        text: 'Go to Checkout', 
-        onPress: onNavigateToCheckout 
+  // Update handleAddToOrder to show alert and remove navigation
+  const handleAddToOrder = async () => {
+    const session = await supabase.auth.getSession();
+    const userId = session.data?.session?.user?.id;
+
+    if (!userId) {
+      Alert.alert('Error', 'User not authenticated.');
+      return;
+    }
+
+    // Fetch vendor_id if not already present
+    if (!food?.vendor_id) {
+      try {
+        const { data, error } = await supabase
+          .from('items')
+          .select('vendor_id')
+          .eq('id', food?.id)
+          .single();
+
+        if (error || !data?.vendor_id) {
+          console.log('Error fetching vendor_id:', error);
+          Alert.alert('Error', 'Vendor ID is missing and could not be fetched.');
+          return;
+        }
+
+        food.vendor_id = data.vendor_id; // Assign fetched vendor_id to food object
+      } catch (err) {
+        console.log('Unexpected error fetching vendor_id:', err);
+        Alert.alert('Error', 'An unexpected error occurred while fetching vendor ID.');
+        return;
       }
-    ]);
+    }
+
+    const vendorId = food?.vendor_id ?? null;
+
+    if (!vendorId) {
+      Alert.alert('Error', 'Vendor ID is missing. Cannot add item to cart.');
+      return;
+    }
+
+    try {
+      // Check if the item already exists in the cart
+      const { data: existingItem, error: fetchError } = await supabase
+        .from('cart')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('item_id', food?.id)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // Ignore "row not found" error
+        console.log('Error fetching existing cart item:', fetchError);
+        Alert.alert('Error', 'Failed to check existing cart item.');
+        return;
+      }
+
+      if (existingItem) {
+        // Update the existing item
+        const newQuantity = existingItem.quantity + quantity;
+        const newTotalPrice = newQuantity * productData.price;
+
+        const { error: updateError } = await supabase
+          .from('cart')
+          .update({
+            quantity: newQuantity,
+            total_price: newTotalPrice,
+          })
+          .eq('cart_id', existingItem.cart_id);
+
+        if (updateError) {
+          console.log('Error updating cart item:', updateError);
+          Alert.alert('Error', 'Failed to update cart item.');
+          return;
+        }
+
+        Alert.alert('Success', 'Cart item updated successfully.');
+      } else {
+        // Insert a new item
+        const { error: insertError } = await supabase.from('cart').insert({
+          user_id: userId,
+          vendor_id: vendorId,
+          item_id: food?.id,
+          quantity,
+          price: productData.price,
+          total_price: productData.price * quantity,
+        });
+
+        if (insertError) {
+          console.log('Error inserting cart item:', insertError);
+          Alert.alert('Error', 'Failed to add item to cart.');
+          return;
+        }
+
+        Alert.alert('Success', 'Food added to the cart.');
+      }
+    } catch (err) {
+      console.log('Unexpected Error:', err);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    }
+  };
+
+  const handleIncrement = () => {
+    setQuantity((prev) => prev + 1);
+  };
+
+  const handleDecrement = () => {
+    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
   };
 
   // Update the listData to include price if needed
@@ -114,7 +198,21 @@ const ProductDetailScreen = ({ onAddToCart, onNavigateToCheckout }: ProductDetai
           </Text>
         );
       case 'description':
-        return <Text style={styles.description}>{item.text}</Text>;
+        return (
+          <>
+            <Text style={styles.description}>{item.text}</Text>
+            {/* Quantity Selector Below Description */}
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity style={styles.quantityButton} onPress={handleDecrement}>
+                <Text style={styles.quantityButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <TouchableOpacity style={styles.quantityButton} onPress={handleIncrement}>
+                <Text style={styles.quantityButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        );
       default:
         return null;
     }
@@ -142,7 +240,7 @@ const ProductDetailScreen = ({ onAddToCart, onNavigateToCheckout }: ProductDetai
         <View style={styles.footer}>
           <TouchableOpacity style={styles.addToOrderButton} onPress={handleAddToOrder}>
             <Text style={styles.addToOrderButtonText}>
-              Add to Order - ${typeof productData.price === 'number' ? productData.price.toFixed(2) : productData.price}
+              Add to Cart
             </Text>
           </TouchableOpacity>
         </View>
@@ -262,6 +360,32 @@ const styles = StyleSheet.create({
     color: '#1b0e0f',
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
+  // Quantity
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 16,
+  },
+  quantityButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e7d0d1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  quantityButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1b0e0f',
+  },
+  quantityText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1b0e0f',
+  },
   // Footer
   footer: {
     position: 'absolute',
@@ -284,7 +408,7 @@ const styles = StyleSheet.create({
     color: '#fcf8f8',
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
-    price: {
+  price: {
     fontSize: 18,
     fontWeight: '700',
     color: '#e82630',
