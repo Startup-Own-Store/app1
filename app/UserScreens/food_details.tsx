@@ -30,7 +30,7 @@ interface ProductDetailScreenProps {
   onNavigateToCheckout?: () => void;
 }
 
-const ProductDetailScreen = ({ onAddToCart, onNavigateToCheckout }: ProductDetailScreenProps) => {
+const FoodDetailsScreen = ({ onAddToCart, onNavigateToCheckout }: ProductDetailScreenProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute();
   const { food } = route.params as { food: any }; 
@@ -418,4 +418,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProductDetailScreen;
+export default FoodDetailsScreen;
