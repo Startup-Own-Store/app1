@@ -68,19 +68,15 @@ const VendorHomeScreen: React.FC<VendorHomeScreenProps> = ({ navigation }) => {
         console.error('Error fetching orders:', ordersError);
         return;
       }
-
+    
       // For each order, fetch the customer name and order items
-      const ordersWithDetails = await Promise.all(
+    // For each order, fetch the customer name and order items
+// For each order, fetch the customer name and order items
+const ordersWithDetails = await Promise.all(
   (ordersData || []).map(async (order) => {
-    // Fetch customer display name from auth.users table
-    const { data: customerData } = await supabase
-      .from('auth.users')
-      .select('raw_user_meta_data')
-      .eq('id', order.user_id)
-      .single();
-
-    // Extract display name from raw_user_meta_data
-    const displayName = customerData?.raw_user_meta_data?.display_name || 'Customer';
+    // Use the RPC function
+    const { data: fullNameData, error: nameError } = await supabase
+      .rpc('get_customer_name', { customer_id: order.user_id });
 
     // Fetch order items
     const { data: itemsData } = await supabase
@@ -97,7 +93,7 @@ const VendorHomeScreen: React.FC<VendorHomeScreenProps> = ({ navigation }) => {
 
     return {
       ...order,
-      customer_name: displayName, // Use the extracted display name
+      customer_name: fullNameData || 'Customer',
       items: itemsData || [],
     };
   })
