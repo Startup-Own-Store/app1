@@ -12,7 +12,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
-import supabase from '../../SupabaseClient'; // Import your Supabase client
+import supabase from '../../SupabaseClient';
 
 type VendorHomeScreenProps = {
   navigation: {
@@ -29,7 +29,7 @@ interface Order {
   total_price: number;
   delivery_address: string;
   created_at: string;
-  status?: string;
+  status: string; // Changed from optional to required
   customer_name?: string;
   items?: OrderItem[];
 }
@@ -54,11 +54,10 @@ const VendorHomeScreen: React.FC<VendorHomeScreenProps> = ({ navigation }) => {
     try {
       setLoading(true);
       
-      // Get current vendor's user_id (you might need to adjust this based on your auth setup)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch orders for this vendor
+      // Fetch orders for this vendor with their actual status
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
@@ -69,38 +68,36 @@ const VendorHomeScreen: React.FC<VendorHomeScreenProps> = ({ navigation }) => {
         console.error('Error fetching orders:', ordersError);
         return;
       }
-
+    
       // For each order, fetch the customer name and order items
-      const ordersWithDetails = await Promise.all(
-        (ordersData || []).map(async (order) => {
-          // Fetch customer name
-          const { data: customerData } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', order.user_id)
-            .single();
+    // For each order, fetch the customer name and order items
+// For each order, fetch the customer name and order items
+const ordersWithDetails = await Promise.all(
+  (ordersData || []).map(async (order) => {
+    // Use the RPC function
+    const { data: fullNameData, error: nameError } = await supabase
+      .rpc('get_customer_name', { customer_id: order.user_id });
 
-          // Fetch order items (you'll need to create an order_items table)
-          const { data: itemsData } = await supabase
-            .from('order_items')
-            .select(`
-              id,
-              quantity,
-              items (
-                item_name,
-                price
-              )
-            `)
-            .eq('order_id', order.order_id);
+    // Fetch order items
+    const { data: itemsData } = await supabase
+      .from('order_items')
+      .select(`
+        id,
+        quantity,
+        items (
+          item_name,
+          price
+        )
+      `)
+      .eq('order_id', order.order_id);
 
-          return {
-            ...order,
-            customer_name: customerData?.full_name || 'Customer',
-            items: itemsData || [],
-            status: 'pending' // Default status
-          };
-        })
-      );
+    return {
+      ...order,
+      customer_name: fullNameData || 'Customer',
+      items: itemsData || [],
+    };
+  })
+);
 
       setOrders(ordersWithDetails);
     } catch (error) {
@@ -115,40 +112,51 @@ const VendorHomeScreen: React.FC<VendorHomeScreenProps> = ({ navigation }) => {
     fetchOrders();
   }, []);
 
-  // Set up real-time subscription for new orders
- // Set up real-time subscription for new orders
-useEffect(() => {
-  const setupRealtimeSubscription = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  // Set up real-time subscription for new orders and status updates
+  useEffect(() => {
+    const setupRealtimeSubscription = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-      const subscription = supabase
-        .channel('orders_channel')
-        .on('postgres_changes', 
-          { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'orders',
-            filter: `vendor_id=eq.${user.id}`
-          }, 
-          (payload) => {
-            console.log('New order received!', payload.new);
-            fetchOrders(); // Refresh orders when new one is added
-          }
-        )
-        .subscribe();
+        const subscription = supabase
+          .channel('orders_channel')
+          .on('postgres_changes', 
+            { 
+              event: 'INSERT', 
+              schema: 'public', 
+              table: 'orders',
+              filter: `vendor_id=eq.${user.id}`
+            }, 
+            (payload) => {
+              console.log('New order received!', payload.new);
+              fetchOrders();
+            }
+          )
+          .on('postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'orders',
+              filter: `vendor_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('Order updated!', payload.new);
+              fetchOrders(); // Refresh when order status changes
+            }
+          )
+          .subscribe();
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    } catch (error) {
-      console.error('Error setting up real-time subscription:', error);
-    }
-  };
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error setting up real-time subscription:', error);
+      }
+    };
 
-  setupRealtimeSubscription();
-}, []);
+    setupRealtimeSubscription();
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -168,17 +176,15 @@ useEffect(() => {
 
       if (error) {
         console.error('Error accepting order:', error);
+        alert('Error accepting order');
         return;
       }
 
-      // Update local state
-      setOrders(orders.map(order => 
-        order.order_id === orderId 
-          ? { ...order, status: 'accepted' }
-          : order
-      ));
+      // No need to update local state manually - real-time subscription will handle it
+      alert('Order accepted successfully!');
     } catch (error) {
       console.error('Error:', error);
+      alert('Error accepting order');
     }
   };
 
@@ -191,16 +197,14 @@ useEffect(() => {
 
       if (error) {
         console.error('Error rejecting order:', error);
+        alert('Error rejecting order');
         return;
       }
 
-      setOrders(orders.map(order => 
-        order.order_id === orderId 
-          ? { ...order, status: 'rejected' }
-          : order
-      ));
+      alert('Order rejected successfully!');
     } catch (error) {
       console.error('Error:', error);
+      alert('Error rejecting order');
     }
   };
 
@@ -213,16 +217,14 @@ useEffect(() => {
 
       if (error) {
         console.error('Error completing order:', error);
+        alert('Error completing order');
         return;
       }
 
-      setOrders(orders.map(order => 
-        order.order_id === orderId 
-          ? { ...order, status: 'completed' }
-          : order
-      ));
+      alert('Order completed successfully!');
     } catch (error) {
       console.error('Error:', error);
+      alert('Error completing order');
     }
   };
 
@@ -230,9 +232,10 @@ useEffect(() => {
     navigation.navigate('OrderDetails', { order });
   };
 
-  // Filter orders by status
+  // Filter orders by status - using actual status from database
   const pendingOrders = orders.filter(order => order.status === 'pending');
   const acceptedOrders = orders.filter(order => order.status === 'accepted');
+  const rejectedOrders = orders.filter(order => order.status === 'rejected');
   const completedOrders = orders.filter(order => order.status === 'completed');
 
   const Dashboard = () => (
@@ -252,66 +255,72 @@ useEffect(() => {
     </View>
   );
 
-const OrderCard = ({ order }: { order: Order }) => {
-  const handleCardPress = () => {
-    handleViewDetails(order);
-  };
+  const OrderCard = ({ order }: { order: Order }) => {
+    const handleCardPress = () => {
+      handleViewDetails(order);
+    };
 
-  const handleButtonPress = (e: any, callback: () => void) => {
-    e.stopPropagation(); // Prevent the card press from triggering
-    callback();
-  };
+    const handleButtonPress = (e: any, callback: () => void) => {
+      e.stopPropagation();
+      callback();
+    };
 
-  return (
-    <TouchableOpacity style={styles.card} onPress={handleCardPress} activeOpacity={0.9}>
-      <View style={styles.orderHeader}>
-        <Text style={styles.orderId}>Order #{order.order_id.slice(0, 8)}</Text>
-        <Text style={[styles.statusBadge, 
-          { backgroundColor: 
-            order.status === 'pending' ? '#ffc107' :
-            order.status === 'accepted' ? '#17a2b8' :
-            order.status === 'completed' ? '#28a745' : '#dc3545'
-          }]}>
-          {order.status?.toUpperCase()}
+    return (
+      <TouchableOpacity style={styles.card} onPress={handleCardPress} activeOpacity={0.9}>
+        <View style={styles.orderHeader}>
+          <Text style={styles.orderId}>Order #{order.order_id.slice(0, 8)}</Text>
+          <Text style={[styles.statusBadge, 
+            { backgroundColor: 
+              order.status === 'pending' ? '#ffc107' :
+              order.status === 'accepted' ? '#17a2b8' :
+              order.status === 'completed' ? '#28a745' :
+              order.status === 'rejected' ? '#dc3545' : '#6c757d'
+            }]}>
+            {order.status?.toUpperCase()}
+          </Text>
+        </View>
+        
+        <Text style={styles.customerName}>{order.customer_name}</Text>
+        <Text style={styles.orderInfo}>Total: ${order.total_price.toFixed(2)}</Text>
+        <Text style={styles.orderInfo}>Address: {order.delivery_address}</Text>
+        <Text style={styles.orderInfo}>
+          {order.items?.length || 0} items · {new Date(order.created_at).toLocaleTimeString()}
         </Text>
-      </View>
-      
-      <Text style={styles.customerName}>{order.customer_name}</Text>
-      <Text style={styles.orderInfo}>Total: ${order.total_price.toFixed(2)}</Text>
-      <Text style={styles.orderInfo}>Address: {order.delivery_address}</Text>
-      <Text style={styles.orderInfo}>
-        {order.items?.length || 0} items · {new Date(order.created_at).toLocaleTimeString()}
-      </Text>
 
-      <View style={styles.buttonContainer}>
-        {order.status === 'pending' && (
-          <>
+        <View style={styles.buttonContainer}>
+          {order.status === 'pending' && (
+            <>
+              <TouchableOpacity 
+                style={[styles.button, styles.acceptButton]} 
+                onPress={(e) => handleButtonPress(e, () => handleAcceptOrder(order.order_id))}
+              >
+                <Text style={styles.buttonText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.button, styles.rejectButton]} 
+                onPress={(e) => handleButtonPress(e, () => handleRejectOrder(order.order_id))}
+              >
+                <Text style={styles.buttonText}>Reject</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {order.status === 'accepted' && (
             <TouchableOpacity 
-              style={[styles.button, styles.acceptButton]} 
-              onPress={(e) => handleButtonPress(e, () => handleAcceptOrder(order.order_id))}
+              style={[styles.button, styles.completeButton]} 
+              onPress={(e) => handleButtonPress(e, () => handleCompleteOrder(order.order_id))}
             >
-              <Text style={styles.buttonText}>Accept</Text>
+              <Text style={styles.buttonText}>Complete</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.button, styles.rejectButton]} 
-              onPress={(e) => handleButtonPress(e, () => handleRejectOrder(order.order_id))}
-            >
-              <Text style={styles.buttonText}>Reject</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        {order.status === 'accepted' && (
-          <TouchableOpacity 
-            style={[styles.button, styles.completeButton]} 
-            onPress={(e) => handleButtonPress(e, () => handleCompleteOrder(order.order_id))}
-          >
-            <Text style={styles.buttonText}>Complete</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
+          )}
+          {(order.status === 'rejected' || order.status === 'completed') && (
+            <Text style={styles.finalStatusText}>
+              Order {order.status.toUpperCase()}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -367,6 +376,16 @@ const OrderCard = ({ order }: { order: Order }) => {
               <>
                 <Text style={styles.sectionTitle}>Completed ({completedOrders.length})</Text>
                 {completedOrders.map(order => (
+                  <OrderCard key={order.order_id} order={order} />
+                ))}
+              </>
+            )}
+
+            {/* Rejected Orders */}
+            {rejectedOrders.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Rejected ({rejectedOrders.length})</Text>
+                {rejectedOrders.map(order => (
                   <OrderCard key={order.order_id} order={order} />
                 ))}
               </>
@@ -628,6 +647,13 @@ const styles = StyleSheet.create({
     color: '#1c140c',
     marginBottom: 12,
     marginTop: 20,
+  },
+    finalStatusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#6c757d',
+    textAlign: 'center',
+    padding: 10,
   },
 });
 export default VendorHomeScreen;

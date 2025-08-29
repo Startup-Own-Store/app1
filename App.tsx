@@ -100,14 +100,12 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [needsNameInput, setNeedsNameInput] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUserRole(session?.user?.user_metadata?.role || null);
       setLoading(false);
-      setNeedsNameInput(!session?.user?.user_metadata?.display_name);
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -115,7 +113,6 @@ export default function App() {
         setSession(session);
         setUserRole(session?.user?.user_metadata?.role || null);
         setLoading(false);
-        setNeedsNameInput(!session?.user?.user_metadata?.display_name);
       }
     );
 
@@ -145,8 +142,6 @@ export default function App() {
               <Stack.Screen name="DeliveryLogin" component={DeliveryLoginScreen} />
               <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
             </>
-          ) : needsNameInput ? (
-            <Stack.Screen name="NameInputScreen" component={NameInputScreen} />
           ) : userRole === 'admin' ? (
             // --- Group of screens for the LOGGED IN ADMIN ---
             <>
