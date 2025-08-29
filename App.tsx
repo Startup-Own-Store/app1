@@ -43,6 +43,7 @@ import NameInputScreen from './app/UserScreens/NameInputScreen';
 import OrderAcceptedScreen from './app/screens/CheckOut';
 import AddItemScreen from './app/screens/add_item';
 import ProductDetailsScreen from './app/screens/product_details';
+import UserOrderDetails from './app/UserScreens/UserOrderDetails';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -88,6 +89,9 @@ export type RootStackParamList = {
   VendorHome: undefined;
   AddItemScreen: undefined;
   ProductDetails: { itemId: string };
+
+  // --- User Order Details Screen ---
+  UserOrderDetails: { order: any };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -96,12 +100,14 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsNameInput, setNeedsNameInput] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUserRole(session?.user?.user_metadata?.role || null);
       setLoading(false);
+      setNeedsNameInput(!session?.user?.user_metadata?.display_name);
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -109,6 +115,7 @@ export default function App() {
         setSession(session);
         setUserRole(session?.user?.user_metadata?.role || null);
         setLoading(false);
+        setNeedsNameInput(!session?.user?.user_metadata?.display_name);
       }
     );
 
@@ -138,6 +145,8 @@ export default function App() {
               <Stack.Screen name="DeliveryLogin" component={DeliveryLoginScreen} />
               <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
             </>
+          ) : needsNameInput ? (
+            <Stack.Screen name="NameInputScreen" component={NameInputScreen} />
           ) : userRole === 'admin' ? (
             // --- Group of screens for the LOGGED IN ADMIN ---
             <>
@@ -172,6 +181,7 @@ export default function App() {
               <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
               <Stack.Screen name="Cart" component={CartScreen} />
               <Stack.Screen name="NameInputScreen" component={NameInputScreen} />
+              <Stack.Screen name="UserOrderDetails" component={UserOrderDetails} />
             </>
           )}
         </Stack.Navigator>
