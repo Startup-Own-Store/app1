@@ -36,6 +36,13 @@ const AdminDashboard = () => {
       >
         <Text style={styles.buttonText}>Create Delivery User</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('AdminOrderDetails')}
+      >
+        <Text style={styles.buttonText}>Order Details</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
         <Text style={styles.buttonText}>Logout</Text>
       </TouchableOpacity>
