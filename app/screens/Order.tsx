@@ -168,65 +168,135 @@ const ordersWithDetails = await Promise.all(
   };
 
   const handleAcceptOrder = async (orderId: string) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: 'accepted' })
-        .eq('order_id', orderId);
+  try {
+    // Update local state immediately for instant UI feedback
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'accepted' }
+          : order
+      )
+    );
 
-      if (error) {
-        console.error('Error accepting order:', error);
-        alert('Error accepting order');
-        return;
-      }
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'accepted' })
+      .eq('order_id', orderId);
 
-      // No need to update local state manually - real-time subscription will handle it
-      alert('Order accepted successfully!');
-    } catch (error) {
-      console.error('Error:', error);
+    if (error) {
+      console.error('Error accepting order:', error);
+      // Revert local state if there's an error
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.order_id === orderId 
+            ? { ...order, status: 'pending' } // Revert to previous status
+            : order
+        )
+      );
       alert('Error accepting order');
+      return;
     }
-  };
 
-  const handleRejectOrder = async (orderId: string) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: 'rejected' })
-        .eq('order_id', orderId);
+    alert('Order accepted successfully!');
+  } catch (error) {
+    console.error('Error:', error);
+    // Revert local state on error
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'pending' }
+          : order
+      )
+    );
+    alert('Error accepting order');
+  }
+};
 
-      if (error) {
-        console.error('Error rejecting order:', error);
-        alert('Error rejecting order');
-        return;
-      }
+const handleRejectOrder = async (orderId: string) => {
+  try {
+    // Update local state immediately
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'rejected' }
+          : order
+      )
+    );
 
-      alert('Order rejected successfully!');
-    } catch (error) {
-      console.error('Error:', error);
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'rejected' })
+      .eq('order_id', orderId);
+
+    if (error) {
+      console.error('Error rejecting order:', error);
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.order_id === orderId 
+            ? { ...order, status: 'pending' }
+            : order
+        )
+      );
       alert('Error rejecting order');
+      return;
     }
-  };
 
-  const handleCompleteOrder = async (orderId: string) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: 'completed' })
-        .eq('order_id', orderId);
+    alert('Order rejected successfully!');
+  } catch (error) {
+    console.error('Error:', error);
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'pending' }
+          : order
+      )
+    );
+    alert('Error rejecting order');
+  }
+};
 
-      if (error) {
-        console.error('Error completing order:', error);
-        alert('Error completing order');
-        return;
-      }
+const handleCompleteOrder = async (orderId: string) => {
+  try {
+    // Update local state immediately
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'completed' }
+          : order
+      )
+    );
 
-      alert('Order completed successfully!');
-    } catch (error) {
-      console.error('Error:', error);
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'completed' })
+      .eq('order_id', orderId);
+
+    if (error) {
+      console.error('Error completing order:', error);
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.order_id === orderId 
+            ? { ...order, status: 'accepted' }
+            : order
+        )
+      );
       alert('Error completing order');
+      return;
     }
-  };
+
+    alert('Order completed successfully!');
+  } catch (error) {
+    console.error('Error:', error);
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.order_id === orderId 
+          ? { ...order, status: 'accepted' }
+          : order
+      )
+    );
+    alert('Error completing order');
+  }
+};
 
   const handleViewDetails = (order: Order) => {
     navigation.navigate('OrderDetails', { order });
