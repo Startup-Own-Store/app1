@@ -1,4 +1,6 @@
 import * as React from 'react';
+import axios from 'axios';
+import RazorpayCheckout from 'react-native-razorpay';
 import {
   View,
   Text,
@@ -16,11 +18,65 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import supabase from '../../SupabaseClient';
 
 const CheckoutScreen: React.FC = () => {
+  // Helper function to place order in DB
+  const handleOrderPlacement = async (userId: string) => {
+    // Insert a single order into the database
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: userId,
+        vendor_id: cartItems[0]?.vendor_id,
+        total_price: total,
+        delivery_address: deliveryAddress,
+        payment_method: selectedPayment,
+      })
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error('Error creating order:', orderError);
+      Alert.alert('Error', 'Failed to place order.');
+      return;
+    }
+
+    // Insert all cart items as order items with the same `order_id`
+    const orderItems = cartItems.map((item: any) => ({
+      order_id: order.order_id,
+      item_name: item.items.item_name,
+      quantity: item.quantity,
+      price: item.total_price,
+    }));
+
+    const { error: orderItemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (orderItemsError) {
+      console.error('Error creating order items:', orderItemsError);
+      Alert.alert('Error', 'Failed to place order items.');
+      return;
+    }
+
+    // Optionally, clear the cart after placing the order
+    const { error: clearCartError } = await supabase
+      .from('cart')
+      .delete()
+      .eq('user_id', userId);
+
+    if (clearCartError) {
+      console.error('Error clearing cart:', clearCartError);
+      Alert.alert('Error', 'Failed to clear cart.');
+      return;
+    }
+
+    Alert.alert('Success', 'Order placed successfully!');
+    navigation.navigate('MainUser' as never);
+  };
   const navigation = useNavigation();
   const route = useRoute();
 
   const [cartItems, setCartItems] = React.useState<any[]>([]);
-  const [selectedPayment, setSelectedPayment] = React.useState('card');
+  const [selectedPayment, setSelectedPayment] = React.useState('cash');
   const [deliveryAddress, setDeliveryAddress] = React.useState('');
 
   React.useEffect(() => {
@@ -62,6 +118,18 @@ const CheckoutScreen: React.FC = () => {
 
   // Update `placeOrder` to create a single order for all cart items
   const placeOrder = async () => {
+    // MOCK: Simulate successful UPI payment for test/demo
+    if (selectedPayment === 'upi' && __DEV__) {
+      const session = await supabase.auth.getSession();
+      const mockUserId = session.data?.session?.user?.id;
+      if (!mockUserId) {
+        Alert.alert('Error', 'User not authenticated.');
+        return;
+      }
+      Alert.alert('Payment Success (Mock)', 'Simulated UPI payment success in test mode.');
+      await handleOrderPlacement(mockUserId);
+      return;
+    }
     try {
       const session = await supabase.auth.getSession();
       const userId = session.data?.session?.user?.id;
@@ -82,56 +150,50 @@ const CheckoutScreen: React.FC = () => {
         return;
       }
 
-      // Insert a single order into the database
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: userId,
-          vendor_id: cartItems[0]?.vendor_id, // Assuming all items have the same vendor_id
-          total_price: total,
-          delivery_address: deliveryAddress,
-        })
-        .select()
-        .single();
-
-      if (orderError) {
-        console.error('Error creating order:', orderError);
-        Alert.alert('Error', 'Failed to place order.');
+      // If UPI selected, trigger Razorpay
+      if (selectedPayment === 'upi') {
+        try {
+          // Call backend to create Razorpay order
+          const response = await axios.post('http://10.212.201.26:3000/app/api/create-order', {
+            amount: total,
+          });
+          // Use the order_id from backend response
+          const order_id = response.data.id;
+          const razorpayOptions = {
+            description: 'Order Payment',
+            currency: 'INR',
+            key: 'rzp_test_aSxggwJlgc2fij',
+            amount: response.data.amount, // Use backend amount for consistency
+            name: 'OwnStore',
+            order_id: order_id,
+            prefill: {
+              email: 'user@example.com',
+              contact: '9999999999',
+              name: 'User',
+              upi: 'success@razorpay', // Use Razorpay test UPI ID
+            },
+            theme: { color: '#ec8627' },
+            method: { upi: true },
+          };
+          RazorpayCheckout.open(razorpayOptions)
+            .then(async (data: any) => {
+              // Payment success, proceed with order placement
+              await handleOrderPlacement(userId);
+            })
+            .catch((error: any) => {
+              Alert.alert(
+                'Payment Failed',
+                `Reason: ${error.description || 'UPI payment was cancelled or failed.'}`
+              );
+            });
+        } catch (err) {
+          Alert.alert('Payment Error', 'Failed to create Razorpay order.');
+        }
         return;
       }
 
-      // Insert all cart items as order items with the same `order_id`
-      const orderItems = cartItems.map((item: any) => ({
-        order_id: order.order_id,
-        item_name: item.items.item_name,
-        quantity: item.quantity,
-        price: item.total_price,
-      }));
-
-      const { error: orderItemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (orderItemsError) {
-        console.error('Error creating order items:', orderItemsError);
-        Alert.alert('Error', 'Failed to place order items.');
-        return;
-      }
-
-      // Optionally, clear the cart after placing the order
-      const { error: clearCartError } = await supabase
-        .from('cart')
-        .delete()
-        .eq('user_id', userId);
-
-      if (clearCartError) {
-        console.error('Error clearing cart:', clearCartError);
-        Alert.alert('Error', 'Failed to clear cart.');
-        return;
-      }
-
-      Alert.alert('Success', 'Order placed successfully!');
-      navigation.navigate('MainUser' as never);
+      // For Cash on Delivery, place order directly
+      await handleOrderPlacement(userId);
     } catch (err) {
       console.error('Unexpected error:', err);
       Alert.alert('Error', 'An unexpected error occurred.');
@@ -164,6 +226,33 @@ const CheckoutScreen: React.FC = () => {
                   onChangeText={setDeliveryAddress}
                 />
               </View>
+            </View>
+          </View>
+
+          {/* Payment Method */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Payment Method</Text>
+            <View style={styles.paymentBox}>
+              <TouchableOpacity
+                style={styles.paymentOption}
+                onPress={() => setSelectedPayment('cash')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.radioOuter}>
+                  {selectedPayment === 'cash' && <View style={styles.radioInner} />}
+                </View>
+                <Text style={styles.paymentText}>Cash on Delivery</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.paymentOption}
+                onPress={() => setSelectedPayment('upi')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.radioOuter}>
+                  {selectedPayment === 'upi' && <View style={styles.radioInner} />}
+                </View>
+                <Text style={styles.paymentText}>UPI Payment</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -205,6 +294,40 @@ const CheckoutScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  paymentBox: {
+    backgroundColor: '#f5f2f0',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'column',
+    marginBottom: 8,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#ec8627',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#fff',
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#ec8627',
+  },
+  paymentText: {
+    fontSize: 16,
+    color: '#181411',
+    fontWeight: '500',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
