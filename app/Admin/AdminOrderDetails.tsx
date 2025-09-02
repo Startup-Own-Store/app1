@@ -23,6 +23,7 @@ interface Order {
   delivery_address: string;
   created_at: string;
   status: string;
+  payment_method?: string;
   customer_name?: string;
   vendor_name?: string;
   items?: OrderItem[];
@@ -49,59 +50,61 @@ const AdminOrderDetailsScreen = () => {
     fetchAcceptedOrders();
   }, []);
 
-  const fetchAcceptedOrders = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch all orders with status 'accepted'
-      const { data: ordersData, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('status', 'accepted')
-        .order('created_at', { ascending: false });
+ const fetchAcceptedOrders = async () => {
+  try {
+    setLoading(true);
+    
+    // Fetch orders with status 'accepted' or 'completed', including payment_method
+    const { data: ordersData, error } = await supabase
+      .from('orders')
+      .select('*')
+      .in('status', ['accepted', 'completed'])
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching accepted orders:', error);
-        return;
-      }
-
-      // Enhance orders with vendor and customer names
-      const enhancedOrders = await Promise.all(
-        (ordersData || []).map(async (order) => {
-          const { data: vendorName } = await supabase
-            .rpc('get_vendor_name', { vendor_id: order.vendor_id });
-
-          const { data: customerName } = await supabase
-            .rpc('get_customer_name', { customer_id: order.user_id });
-
-          // Fetch order items
-          const { data: itemsData } = await supabase
-            .from('order_items')
-            .select('*')
-            .eq('order_id', order.order_id);
-
-          return {
-            ...order,
-            vendor_name: vendorName || 'Vendor',
-            customer_name: customerName || 'Customer',
-            items: itemsData || [],
-          };
-        })
-      );
-
-      setOrders(enhancedOrders);
-      
-      // If specific orderId is provided, select it
-     if (enhancedOrders.length > 0) {
-        setSelectedOrder(enhancedOrders[0]); // Show first order by default
-      }
-      
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
+    if (error) {
+      console.error('Error fetching orders:', error);
+      return;
     }
-  };
+
+    // Enhance orders with vendor and customer names
+    const enhancedOrders = await Promise.all(
+      (ordersData || []).map(async (order) => {
+        const { data: vendorName } = await supabase
+          .rpc('get_vendor_name', { vendor_id: order.vendor_id });
+
+        const { data: customerName } = await supabase
+          .rpc('get_customer_name', { customer_id: order.user_id });
+
+        // Fetch order items
+        const { data: itemsData } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.order_id);
+
+        return {
+          ...order,
+          vendor_name: vendorName || 'Vendor',
+          customer_name: customerName || 'Customer',
+          items: itemsData || [],
+          payment_method: order.payment_method,
+        };
+      })
+    );
+
+    setOrders(enhancedOrders);
+
+    // If specific orderId is provided, select first order
+    if (enhancedOrders.length > 0) {
+      setSelectedOrder(enhancedOrders[0]);
+    }
+    
+  } catch (error) {
+    console.error('Error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleBack = () => {
     navigation.goBack();
@@ -220,6 +223,11 @@ const AdminOrderDetailsScreen = () => {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Total Amount:</Text>
               <Text style={styles.totalPrice}>${selectedOrder.total_price.toFixed(2)}</Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Payment Method:</Text>
+              <Text style={styles.infoValue}>{selectedOrder.payment_method}</Text>
             </View>
 
             <View style={styles.infoRow}>
