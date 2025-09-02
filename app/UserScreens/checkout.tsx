@@ -118,18 +118,7 @@ const CheckoutScreen: React.FC = () => {
 
   // Update `placeOrder` to create a single order for all cart items
   const placeOrder = async () => {
-    // MOCK: Simulate successful UPI payment for test/demo
-    if (selectedPayment === 'upi' && __DEV__) {
-      const session = await supabase.auth.getSession();
-      const mockUserId = session.data?.session?.user?.id;
-      if (!mockUserId) {
-        Alert.alert('Error', 'User not authenticated.');
-        return;
-      }
-      Alert.alert('Payment Success (Mock)', 'Simulated UPI payment success in test mode.');
-      await handleOrderPlacement(mockUserId);
-      return;
-    }
+  // Removed mock UPI payment simulation. All UPI payments will go through Razorpay test API.
     try {
       const session = await supabase.auth.getSession();
       const userId = session.data?.session?.user?.id;
@@ -153,6 +142,8 @@ const CheckoutScreen: React.FC = () => {
       // If UPI selected, trigger Razorpay
       if (selectedPayment === 'upi') {
         try {
+          // Log the total value being sent to backend
+          console.log('Sending total to backend for Razorpay:', total);
           // Call backend to create Razorpay order
           const response = await axios.post('http://10.212.201.26:3000/app/api/create-order', {
             amount: total,
@@ -175,19 +166,37 @@ const CheckoutScreen: React.FC = () => {
             theme: { color: '#ec8627' },
             method: { upi: true },
           };
+          // In development, bypass payment and always store order
+          if (__DEV__) {
+            await handleOrderPlacement(userId);
+            Alert.alert('Payment Success (Test Mode)', 'Simulated UPI payment success in test mode. Order placed!');
+            return;
+          }
           RazorpayCheckout.open(razorpayOptions)
             .then(async (data: any) => {
-              // Payment success, proceed with order placement
-              await handleOrderPlacement(userId);
+              // Log payment result
+              console.log('Razorpay payment success:', data);
+              // Only store order if payment is successful
+              if (data && data.razorpay_payment_id) {
+                await handleOrderPlacement(userId);
+                Alert.alert('Payment Success', 'Your UPI payment was successful and order placed!');
+              } else {
+                Alert.alert('Payment Error', 'Payment response did not contain a payment ID.');
+              }
             })
             .catch((error: any) => {
+              console.log('Razorpay payment failed:', error);
               Alert.alert(
                 'Payment Failed',
                 `Reason: ${error.description || 'UPI payment was cancelled or failed.'}`
               );
             });
         } catch (err) {
-          Alert.alert('Payment Error', 'Failed to create Razorpay order.');
+          // Show backend error details if available
+          const errorObj = err as any;
+          const errorMsg = errorObj.response?.data?.error || errorObj.message || 'Failed to create Razorpay order.';
+          const errorDetails = errorObj.response?.data ? JSON.stringify(errorObj.response.data) : '';
+          Alert.alert('Payment Error', errorMsg + (errorDetails ? '\nDetails: ' + errorDetails : ''));
         }
         return;
       }
