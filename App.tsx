@@ -25,6 +25,7 @@ import AdminLoginScreen from './app/Admin/AdminLogin';
 import AdminDashboardScreen from './app/Admin/AdminDashboard';
 import CreateVendorUserScreen from './app/Admin/CreateVendorUser';
 import CreateDeliveryUserScreen from './app/Admin/CreateDeliveryUser';
+import AdminOrderDetailsScreen from './app/Admin/AdminOrderDetails';
 
 // Import all UserScreens for direct navigation
 import CheckoutScreen from './app/UserScreens/checkout';
@@ -65,6 +66,7 @@ export type RootStackParamList = {
   AdminDashboard: undefined;
   CreateVendorUser: undefined;
   CreateDeliveryUser: undefined;
+  AdminOrderDetails: undefined;
 
   // --- Other User-Specific Screens ---
   Checkout: undefined;
@@ -80,7 +82,7 @@ export type RootStackParamList = {
 
   // --- Cart Screen ---
   Cart: undefined;
-  OrderDetails: { order: any };
+  OrderDetails: { orderId: string };
 
   // --- Name Input Screen ---
   NameInputScreen: undefined;
@@ -148,6 +150,7 @@ export default function App() {
               <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
               <Stack.Screen name="CreateVendorUser" component={CreateVendorUserScreen} />
               <Stack.Screen name="CreateDeliveryUser" component={CreateDeliveryUserScreen} />
+              <Stack.Screen name="AdminOrderDetails" component={AdminOrderDetailsScreen} />
             </>
           ) : userRole === 'vendor' ? (
             // --- Screens for the LOGGED IN VENDOR ---
