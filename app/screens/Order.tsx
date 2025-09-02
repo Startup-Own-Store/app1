@@ -354,8 +354,22 @@ const handleCompleteOrder = async (orderId: string) => {
         <Text style={styles.orderInfo}>Total: ${order.total_price.toFixed(2)}</Text>
         <Text style={styles.orderInfo}>Address: {order.delivery_address}</Text>
         <Text style={styles.orderInfo}>
-          {order.items?.length || 0} items · {new Date(order.created_at).toLocaleTimeString()}
-        </Text>
+  Ordered At : {
+    (() => {
+      const date = new Date(order.created_at);
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const month = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+      let hours = date.getUTCHours();
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours === 0 ? 12 : hours;
+      const hourStr = String(hours).padStart(2, '0');
+      return `${day} ${month} ${hourStr}:${minutes}:${seconds} ${ampm}`;
+    })()
+  }
+</Text>
 
         <View style={styles.buttonContainer}>
           {order.status === 'pending' && (
@@ -384,7 +398,7 @@ const handleCompleteOrder = async (orderId: string) => {
           )}
           {(order.status === 'rejected' || order.status === 'completed') && (
             <Text style={styles.finalStatusText}>
-              Order {order.status.toUpperCase()}
+              ORDER {order.status.toUpperCase()}
             </Text>
           )}
         </View>

@@ -104,7 +104,19 @@ const OrderAcceptedScreen = () => {
           <>
             <Text style={styles.orderInfo}>Order #{item.orderId.slice(0, 8)}</Text>
             <Text style={styles.orderInfo}>
-              {new Date(item.createdAt).toLocaleTimeString()} · {new Date(item.createdAt).toLocaleDateString()}
+              {(() => {
+                const date = new Date(item.createdAt);
+                const day = String(date.getUTCDate()).padStart(2, '0');
+                const month = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+                let hours = date.getUTCHours();
+                const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+                const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours === 0 ? 12 : hours;
+                const hourStr = String(hours).padStart(2, '0');
+                return `${day} ${month} ${hourStr}:${minutes}:${seconds} ${ampm}`;
+              })()}
             </Text>
           </>
         );

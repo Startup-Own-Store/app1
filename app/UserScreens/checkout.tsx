@@ -145,7 +145,7 @@ const CheckoutScreen: React.FC = () => {
           // Log the total value being sent to backend
           console.log('Sending total to backend for Razorpay:', total);
           // Call backend to create Razorpay order
-          const response = await axios.post('http://10.212.201.26:3000/app/api/create-order', {
+          const response = await axios.post('http://10.131.213.26:3000/app/api/create-order', {
             amount: total,
           });
           // Use the order_id from backend response
