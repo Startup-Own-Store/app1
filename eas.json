@@ -13,11 +13,11 @@
     },
     "production": {
       "autoIncrement": true,
+      "releaseChannel": "production",
+      "distribution": "store",
       "android": {
         "buildType": "app-bundle",
-        "ndk": {
-          "debugSymbols": true
-        }
+        "ndk": "symboltable"
       }
     },
     "development-simulator": {
