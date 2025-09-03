@@ -15,8 +15,7 @@
       "releaseChannel": "production",
       "distribution": "store",
       "android": {
-        "buildType": "app-bundle",
-        "versionCode": 12
+        "buildType": "app-bundle"
       }
     },
     "development-simulator": {
