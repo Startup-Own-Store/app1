@@ -7,7 +7,7 @@
     "android": {
       "package": "com.ajay.ownstoredemo",
       "googleServicesFile": "./android/app/google-services.json",
-      "versionCode": 1
+      "versionCode": 12
     },
     "ios": {
       "bundleIdentifier": "com.ajay.ownstoredemo"
