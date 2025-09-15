@@ -1,0 +1,1119 @@
+diff --git a/node_modules/react-native-gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/react-native-gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..8cebdc7
+Binary files /dev/null and b/node_modules/react-native-gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/react-native-gradle-plugin/.gradle/buildOutputCleanup/cache.properties b/node_modules/react-native-gradle-plugin/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..7968977
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Mon Sep 08 15:31:42 IST 2025
++gradle.version=8.8
+diff --git a/node_modules/react-native-gradle-plugin/.project b/node_modules/react-native-gradle-plugin/.project
+new file mode 100644
+index 0000000..ea4d266
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/.project
+@@ -0,0 +1,34 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<projectDescription>
++	<name>react-native-gradle-plugin</name>
++	<comment>Project react-native-gradle-plugin created by Buildship.</comment>
++	<projects>
++	</projects>
++	<buildSpec>
++		<buildCommand>
++			<name>org.eclipse.jdt.core.javabuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++		<buildCommand>
++			<name>org.eclipse.buildship.core.gradleprojectbuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++	</buildSpec>
++	<natures>
++		<nature>org.eclipse.jdt.core.javanature</nature>
++		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
++	</natures>
++	<filteredResources>
++		<filter>
++			<id>1755403822565</id>
++			<name></name>
++			<type>30</type>
++			<matcher>
++				<id>org.eclipse.core.resources.regexFilterMatcher</id>
++				<arguments>node_modules|\.git|__CREATED_BY_JAVA_LANGUAGE_SERVER__</arguments>
++			</matcher>
++		</filter>
++	</filteredResources>
++</projectDescription>
+diff --git a/node_modules/react-native-gradle-plugin/bin/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/react-native-gradle-plugin/bin/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..8cebdc7
+Binary files /dev/null and b/node_modules/react-native-gradle-plugin/bin/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/react-native-gradle-plugin/bin/.gradle/buildOutputCleanup/cache.properties b/node_modules/react-native-gradle-plugin/bin/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..7968977
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Mon Sep 08 15:31:42 IST 2025
++gradle.version=8.8
+diff --git a/node_modules/react-native-gradle-plugin/bin/.project b/node_modules/react-native-gradle-plugin/bin/.project
+new file mode 100644
+index 0000000..ea4d266
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/.project
+@@ -0,0 +1,34 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<projectDescription>
++	<name>react-native-gradle-plugin</name>
++	<comment>Project react-native-gradle-plugin created by Buildship.</comment>
++	<projects>
++	</projects>
++	<buildSpec>
++		<buildCommand>
++			<name>org.eclipse.jdt.core.javabuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++		<buildCommand>
++			<name>org.eclipse.buildship.core.gradleprojectbuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++	</buildSpec>
++	<natures>
++		<nature>org.eclipse.jdt.core.javanature</nature>
++		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
++	</natures>
++	<filteredResources>
++		<filter>
++			<id>1755403822565</id>
++			<name></name>
++			<type>30</type>
++			<matcher>
++				<id>org.eclipse.core.resources.regexFilterMatcher</id>
++				<arguments>node_modules|\.git|__CREATED_BY_JAVA_LANGUAGE_SERVER__</arguments>
++			</matcher>
++		</filter>
++	</filteredResources>
++</projectDescription>
+diff --git a/node_modules/react-native-gradle-plugin/bin/README.md b/node_modules/react-native-gradle-plugin/bin/README.md
+new file mode 100644
+index 0000000..dbe677a
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/README.md
+@@ -0,0 +1,16 @@
++# react-native-gradle-plugin
++
++[![Version][version-badge]][package]
++
++A Gradle Plugin used to support development of React Native applications for Android.
++
++## Installation
++
++```
++yarn add react-native-gradle-plugin
++```
++
++*Note: We're using `yarn` to install deps. Feel free to change commands to use `npm` 3+ and `npx` if you like*
++
++[version-badge]: https://img.shields.io/npm/v/react-native-gradle-plugin?style=flat-square
++[package]: https://www.npmjs.com/package/react-native-gradle-plugin
+diff --git a/node_modules/react-native-gradle-plugin/bin/build.gradle.kts b/node_modules/react-native-gradle-plugin/bin/build.gradle.kts
+new file mode 100644
+index 0000000..5ea92ee
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/build.gradle.kts
+@@ -0,0 +1,68 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++import org.gradle.api.internal.classpath.ModuleRegistry
++import org.gradle.api.tasks.testing.logging.TestExceptionFormat
++import org.gradle.configurationcache.extensions.serviceOf
++import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
++
++plugins {
++  kotlin("jvm") version "1.6.10"
++  id("java-gradle-plugin")
++}
++
++repositories {
++  google()
++  mavenCentral()
++}
++
++gradlePlugin {
++  plugins {
++    create("react") {
++      id = "com.facebook.react"
++      implementationClass = "com.facebook.react.ReactPlugin"
++    }
++  }
++}
++
++group = "com.facebook.react"
++
++dependencies {
++  implementation(gradleApi())
++  implementation("com.android.tools.build:gradle:7.3.1")
++  implementation("com.google.code.gson:gson:2.8.9")
++  implementation("com.google.guava:guava:31.0.1-jre")
++  implementation("com.squareup:javapoet:1.13.0")
++
++  testImplementation("junit:junit:4.13.2")
++
++  testRuntimeOnly(
++      files(
++          serviceOf<ModuleRegistry>()
++              .getModule("gradle-tooling-api-builders")
++              .classpath
++              .asFiles
++              .first()))
++}
++
++java {
++  sourceCompatibility = JavaVersion.VERSION_11
++  targetCompatibility = JavaVersion.VERSION_11
++}
++
++tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
++  kotlinOptions { jvmTarget = JavaVersion.VERSION_11.majorVersion }
++}
++
++tasks.withType<Test>().configureEach {
++  testLogging {
++    exceptionFormat = TestExceptionFormat.FULL
++    showExceptions = true
++    showCauses = true
++    showStackTraces = true
++  }
++}
+diff --git a/node_modules/react-native-gradle-plugin/bin/gradlew b/node_modules/react-native-gradle-plugin/bin/gradlew
+new file mode 100644
+index 0000000..1b6c787
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/gradlew
+@@ -0,0 +1,234 @@
++#!/bin/sh
++
++#
++# Copyright © 2015-2021 the original authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#      https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++##############################################################################
++#
++#   Gradle start up script for POSIX generated by Gradle.
++#
++#   Important for running:
++#
++#   (1) You need a POSIX-compliant shell to run this script. If your /bin/sh is
++#       noncompliant, but you have some other compliant shell such as ksh or
++#       bash, then to run this script, type that shell name before the whole
++#       command line, like:
++#
++#           ksh Gradle
++#
++#       Busybox and similar reduced shells will NOT work, because this script
++#       requires all of these POSIX shell features:
++#         * functions;
++#         * expansions «$var», «${var}», «${var:-default}», «${var+SET}»,
++#           «${var#prefix}», «${var%suffix}», and «$( cmd )»;
++#         * compound commands having a testable exit status, especially «case»;
++#         * various built-in commands including «command», «set», and «ulimit».
++#
++#   Important for patching:
++#
++#   (2) This script targets any POSIX shell, so it avoids extensions provided
++#       by Bash, Ksh, etc; in particular arrays are avoided.
++#
++#       The "traditional" practice of packing multiple parameters into a
++#       space-separated string is a well documented source of bugs and security
++#       problems, so this is (mostly) avoided, by progressively accumulating
++#       options in "$@", and eventually passing that to Java.
++#
++#       Where the inherited environment variables (DEFAULT_JVM_OPTS, JAVA_OPTS,
++#       and GRADLE_OPTS) rely on word-splitting, this is performed explicitly;
++#       see the in-line comments for details.
++#
++#       There are tweaks for specific operating systems such as AIX, CygWin,
++#       Darwin, MinGW, and NonStop.
++#
++#   (3) This script is generated from the Groovy template
++#       https://github.com/gradle/gradle/blob/master/subprojects/plugins/src/main/resources/org/gradle/api/internal/plugins/unixStartScript.txt
++#       within the Gradle project.
++#
++#       You can find Gradle at https://github.com/gradle/gradle/.
++#
++##############################################################################
++
++# Attempt to set APP_HOME
++
++# Resolve links: $0 may be a link
++app_path=$0
++
++# Need this for daisy-chained symlinks.
++while
++    APP_HOME=${app_path%"${app_path##*/}"}  # leaves a trailing /; empty if no leading path
++    [ -h "$app_path" ]
++do
++    ls=$( ls -ld "$app_path" )
++    link=${ls#*' -> '}
++    case $link in             #(
++      /*)   app_path=$link ;; #(
++      *)    app_path=$APP_HOME$link ;;
++    esac
++done
++
++APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
++
++APP_NAME="Gradle"
++APP_BASE_NAME=${0##*/}
++
++# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
++DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
++
++# Use the maximum available, or set MAX_FD != -1 to use that value.
++MAX_FD=maximum
++
++warn () {
++    echo "$*"
++} >&2
++
++die () {
++    echo
++    echo "$*"
++    echo
++    exit 1
++} >&2
++
++# OS specific support (must be 'true' or 'false').
++cygwin=false
++msys=false
++darwin=false
++nonstop=false
++case "$( uname )" in                #(
++  CYGWIN* )         cygwin=true  ;; #(
++  Darwin* )         darwin=true  ;; #(
++  MSYS* | MINGW* )  msys=true    ;; #(
++  NONSTOP* )        nonstop=true ;;
++esac
++
++CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
++
++
++# Determine the Java command to use to start the JVM.
++if [ -n "$JAVA_HOME" ] ; then
++    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
++        # IBM's JDK on AIX uses strange locations for the executables
++        JAVACMD=$JAVA_HOME/jre/sh/java
++    else
++        JAVACMD=$JAVA_HOME/bin/java
++    fi
++    if [ ! -x "$JAVACMD" ] ; then
++        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
++
++Please set the JAVA_HOME variable in your environment to match the
++location of your Java installation."
++    fi
++else
++    JAVACMD=java
++    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
++
++Please set the JAVA_HOME variable in your environment to match the
++location of your Java installation."
++fi
++
++# Increase the maximum file descriptors if we can.
++if ! "$cygwin" && ! "$darwin" && ! "$nonstop" ; then
++    case $MAX_FD in #(
++      max*)
++        MAX_FD=$( ulimit -H -n ) ||
++            warn "Could not query maximum file descriptor limit"
++    esac
++    case $MAX_FD in  #(
++      '' | soft) :;; #(
++      *)
++        ulimit -n "$MAX_FD" ||
++            warn "Could not set maximum file descriptor limit to $MAX_FD"
++    esac
++fi
++
++# Collect all arguments for the java command, stacking in reverse order:
++#   * args from the command line
++#   * the main class name
++#   * -classpath
++#   * -D...appname settings
++#   * --module-path (only if needed)
++#   * DEFAULT_JVM_OPTS, JAVA_OPTS, and GRADLE_OPTS environment variables.
++
++# For Cygwin or MSYS, switch paths to Windows format before running java
++if "$cygwin" || "$msys" ; then
++    APP_HOME=$( cygpath --path --mixed "$APP_HOME" )
++    CLASSPATH=$( cygpath --path --mixed "$CLASSPATH" )
++
++    JAVACMD=$( cygpath --unix "$JAVACMD" )
++
++    # Now convert the arguments - kludge to limit ourselves to /bin/sh
++    for arg do
++        if
++            case $arg in                                #(
++              -*)   false ;;                            # don't mess with options #(
++              /?*)  t=${arg#/} t=/${t%%/*}              # looks like a POSIX filepath
++                    [ -e "$t" ] ;;                      #(
++              *)    false ;;
++            esac
++        then
++            arg=$( cygpath --path --ignore --mixed "$arg" )
++        fi
++        # Roll the args list around exactly as many times as the number of
++        # args, so each arg winds up back in the position where it started, but
++        # possibly modified.
++        #
++        # NB: a `for` loop captures its iteration list before it begins, so
++        # changing the positional parameters here affects neither the number of
++        # iterations, nor the values presented in `arg`.
++        shift                   # remove old arg
++        set -- "$@" "$arg"      # push replacement arg
++    done
++fi
++
++# Collect all arguments for the java command;
++#   * $DEFAULT_JVM_OPTS, $JAVA_OPTS, and $GRADLE_OPTS can contain fragments of
++#     shell script including quotes and variable substitutions, so put them in
++#     double quotes to make sure that they get re-expanded; and
++#   * put everything else in single quotes, so that it's not re-expanded.
++
++set -- \
++        "-Dorg.gradle.appname=$APP_BASE_NAME" \
++        -classpath "$CLASSPATH" \
++        org.gradle.wrapper.GradleWrapperMain \
++        "$@"
++
++# Use "xargs" to parse quoted args.
++#
++# With -n1 it outputs one arg per line, with the quotes and backslashes removed.
++#
++# In Bash we could simply go:
++#
++#   readarray ARGS < <( xargs -n1 <<<"$var" ) &&
++#   set -- "${ARGS[@]}" "$@"
++#
++# but POSIX shell has neither arrays nor command substitution, so instead we
++# post-process each arg (as a line of input to sed) to backslash-escape any
++# character that might be a shell metacharacter, then use eval to reverse
++# that process (while maintaining the separation between arguments), and wrap
++# the whole thing up as a single "set" statement.
++#
++# This will of course break if any of these variables contains a newline or
++# an unmatched quote.
++#
++
++eval "set -- $(
++        printf '%s\n' "$DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS" |
++        xargs -n1 |
++        sed ' s~[^-[:alnum:]+,./:=@_]~\\&~g; ' |
++        tr '\n' ' '
++    )" '"$@"'
++
++exec "$JAVACMD" "$@"
+diff --git a/node_modules/react-native-gradle-plugin/bin/gradlew.bat b/node_modules/react-native-gradle-plugin/bin/gradlew.bat
+new file mode 100644
+index 0000000..107acd3
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/gradlew.bat
+@@ -0,0 +1,89 @@
++@rem
++@rem Copyright 2015 the original author or authors.
++@rem
++@rem Licensed under the Apache License, Version 2.0 (the "License");
++@rem you may not use this file except in compliance with the License.
++@rem You may obtain a copy of the License at
++@rem
++@rem      https://www.apache.org/licenses/LICENSE-2.0
++@rem
++@rem Unless required by applicable law or agreed to in writing, software
++@rem distributed under the License is distributed on an "AS IS" BASIS,
++@rem WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++@rem See the License for the specific language governing permissions and
++@rem limitations under the License.
++@rem
++
++@if "%DEBUG%" == "" @echo off
++@rem ##########################################################################
++@rem
++@rem  Gradle startup script for Windows
++@rem
++@rem ##########################################################################
++
++@rem Set local scope for the variables with windows NT shell
++if "%OS%"=="Windows_NT" setlocal
++
++set DIRNAME=%~dp0
++if "%DIRNAME%" == "" set DIRNAME=.
++set APP_BASE_NAME=%~n0
++set APP_HOME=%DIRNAME%
++
++@rem Resolve any "." and ".." in APP_HOME to make it shorter.
++for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
++
++@rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
++set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
++
++@rem Find java.exe
++if defined JAVA_HOME goto findJavaFromJavaHome
++
++set JAVA_EXE=java.exe
++%JAVA_EXE% -version >NUL 2>&1
++if "%ERRORLEVEL%" == "0" goto execute
++
++echo.
++echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
++echo.
++echo Please set the JAVA_HOME variable in your environment to match the
++echo location of your Java installation.
++
++goto fail
++
++:findJavaFromJavaHome
++set JAVA_HOME=%JAVA_HOME:"=%
++set JAVA_EXE=%JAVA_HOME%/bin/java.exe
++
++if exist "%JAVA_EXE%" goto execute
++
++echo.
++echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
++echo.
++echo Please set the JAVA_HOME variable in your environment to match the
++echo location of your Java installation.
++
++goto fail
++
++:execute
++@rem Setup the command line
++
++set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
++
++
++@rem Execute Gradle
++"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
++
++:end
++@rem End local scope for the variables with windows NT shell
++if "%ERRORLEVEL%"=="0" goto mainEnd
++
++:fail
++rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
++rem the _cmd.exe /c_ return code!
++if  not "" == "%GRADLE_EXIT_CONSOLE%" exit 1
++exit /b 1
++
++:mainEnd
++if "%OS%"=="Windows_NT" endlocal
++
++:omega
+diff --git a/node_modules/react-native-gradle-plugin/bin/package.json b/node_modules/react-native-gradle-plugin/bin/package.json
+new file mode 100644
+index 0000000..235bfe9
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/package.json
+@@ -0,0 +1,28 @@
++{
++  "name": "react-native-gradle-plugin",
++  "version": "0.71.19",
++  "description": "⚛️ Gradle Plugin for React Native",
++  "homepage": "https://github.com/facebook/react-native/tree/HEAD/packages/react-native-gradle-plugin",
++  "repository": {
++    "type": "git",
++    "url": "git@github.com:facebook/react-native.git",
++    "directory": "packages/react-native-gradle-plugin"
++  },
++  "scripts": {
++    "build": "./gradlew build",
++    "clean": "./gradlew clean",
++    "test": "./gradlew check"
++  },
++  "license": "MIT",
++  "files": [
++    "settings.gradle.kts",
++    "build.gradle.kts",
++    "gradle",
++    "gradlew",
++    "gradlew.bat",
++    "src/main",
++    "README.md"
++  ],
++  "dependencies": {},
++  "devDependencies": {}
++}
+diff --git a/node_modules/react-native-gradle-plugin/bin/settings.gradle.kts b/node_modules/react-native-gradle-plugin/bin/settings.gradle.kts
+new file mode 100644
+index 0000000..8daf82d
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/settings.gradle.kts
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++pluginManagement {
++  repositories {
++    mavenCentral()
++    google()
++    gradlePluginPortal()
++  }
++}
++
++rootProject.name = "react-native-gradle-plugin"
+diff --git a/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/ReactExtension.kt b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/ReactExtension.kt
+new file mode 100644
+index 0000000..9738124
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/ReactExtension.kt
+@@ -0,0 +1,151 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++package com.facebook.react
++
++import com.facebook.react.utils.projectPathToLibraryName
++import javax.inject.Inject
++import org.gradle.api.Project
++import org.gradle.api.file.DirectoryProperty
++import org.gradle.api.file.RegularFileProperty
++import org.gradle.api.provider.ListProperty
++import org.gradle.api.provider.Property
++
++abstract class ReactExtension @Inject constructor(project: Project) {
++
++  private val objects = project.objects
++
++  /**
++   * The path to the root of your project. This is the path to where the `package.json` lives. All
++   * the CLI commands will be invoked from this folder as working directory.
++   *
++   * Default: ${rootProject.dir}/../
++   */
++  val root: DirectoryProperty =
++      objects.directoryProperty().convention(project.rootProject.layout.projectDirectory.dir("../"))
++
++  /**
++   * The path to the react-native NPM package folder.
++   *
++   * Default: ${rootProject.dir}/../node_modules/react-native-codegen
++   */
++  val reactNativeDir: DirectoryProperty =
++      objects.directoryProperty().convention(root.dir("node_modules/react-native"))
++
++  /**
++   * The path to the JS entry file. If not specified, the plugin will try to resolve it using a list
++   * of known locations (e.g. `index.android.js`, `index.js`, etc.).
++   */
++  val entryFile: RegularFileProperty = objects.fileProperty()
++
++  /**
++   * The reference to the React Native CLI. If not specified, the plugin will try to resolve it
++   * looking for `react-native` CLI inside `node_modules` in [root].
++   */
++  val cliFile: RegularFileProperty =
++      objects.fileProperty().convention(reactNativeDir.file("cli.js"))
++
++  /**
++   * The path to the Node executable and extra args. By default it assumes that you have `node`
++   * installed and configured in your $PATH. Default: ["node"]
++   */
++  val nodeExecutableAndArgs: ListProperty<String> =
++      objects.listProperty(String::class.java).convention(listOf("node"))
++
++  /** The command to use to invoke bundle. Default is `bundle` and will be invoked on [root]. */
++  val bundleCommand: Property<String> = objects.property(String::class.java).convention("bundle")
++
++  /**
++   * Custom configuration file for the [bundleCommand]. If provided, it will be passed over with a
++   * `--config` flag to the bundle command.
++   */
++  val bundleConfig: RegularFileProperty = objects.fileProperty()
++
++  /**
++   * The Bundle Asset name. This name will be used also for deriving other bundle outputs such as
++   * the packager source map, the compiler source map and the output source map file.
++   *
++   * Default: index.android.bundle
++   */
++  val bundleAssetName: Property<String> =
++      objects.property(String::class.java).convention("index.android.bundle")
++
++  /**
++   * Toggles the .so Cleanup step. If enabled, we will clean up all the unnecessary files before the
++   * bundle task. If disabled, the developers will have to manually cleanup the files. Default: true
++   */
++  val enableSoCleanup: Property<Boolean> = objects.property(Boolean::class.java).convention(true)
++
++  /** Extra args that will be passed to the [bundleCommand] Default: [] */
++  val extraPackagerArgs: ListProperty<String> =
++      objects.listProperty(String::class.java).convention(emptyList())
++
++  /**
++   * Allows to specify the debuggable variants (by default just 'debug'). Variants in this list
++   * will:
++   * - Not be bundled (the bundle file will not be created and won't be copied over).
++   * - Have the Hermes Debug flags set. That's useful if you have another variant (say `canary`)
++   * where you want dev mode to be enabled. Default: ['debug']
++   */
++  val debuggableVariants: ListProperty<String> =
++      objects.listProperty(String::class.java).convention(listOf("debug"))
++
++  /** Hermes Config */
++
++  /**
++   * The command to use to invoke hermesc (the hermes compiler). Default is "", the plugin will
++   * autodetect it.
++   */
++  val hermesCommand: Property<String> = objects.property(String::class.java).convention("")
++
++  /**
++   * Whether to enable Hermes only on certain variants. If specified as a non-empty list, hermesc
++   * and the .so cleanup for Hermes will be executed only for variants in this list. An empty list
++   * assumes you're either using Hermes for all variants or not (see [enableHermes]).
++   *
++   * Default: []
++   */
++  val enableHermesOnlyInVariants: ListProperty<String> =
++      objects.listProperty(String::class.java).convention(emptyList())
++
++  /** Flags to pass to Hermesc. Default: ["-O", "-output-source-map"] */
++  val hermesFlags: ListProperty<String> =
++      objects.listProperty(String::class.java).convention(listOf("-O", "-output-source-map"))
++
++  /** Codegen Config */
++
++  /**
++   * The path to the react-native-codegen NPM package folder.
++   *
++   * Default: ${rootProject.dir}/../node_modules/react-native-codegen
++   */
++  val codegenDir: DirectoryProperty =
++      objects.directoryProperty().convention(root.dir("node_modules/react-native-codegen"))
++
++  /**
++   * The root directory for all JS files for the app.
++   *
++   * Default: the parent folder of the `/android` folder.
++   */
++  val jsRootDir: DirectoryProperty = objects.directoryProperty()
++
++  /**
++   * The library name that will be used for the codegen artifacts.
++   *
++   * Default: <UpperCamelVersionOfProjectPath>Spec (e.g. for :example:project it will be
++   * ExampleProjectSpec).
++   */
++  val libraryName: Property<String> =
++      objects.property(String::class.java).convention(projectPathToLibraryName(project.path))
++
++  /**
++   * Java package name to use for any codegen artifacts produced during build time. Default:
++   * com.facebook.fbreact.specs
++   */
++  val codegenJavaPackageName: Property<String> =
++      objects.property(String::class.java).convention("com.facebook.fbreact.specs")
++}
+diff --git a/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/ReactPlugin.kt b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
+new file mode 100644
+index 0000000..668e7e8
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
+@@ -0,0 +1,213 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++package com.facebook.react
++
++import com.android.build.api.variant.AndroidComponentsExtension
++import com.android.build.gradle.AppExtension
++import com.android.build.gradle.internal.tasks.factory.dependsOn
++import com.facebook.react.internal.PrivateReactExtension
++import com.facebook.react.tasks.BuildCodegenCLITask
++import com.facebook.react.tasks.GenerateCodegenArtifactsTask
++import com.facebook.react.tasks.GenerateCodegenSchemaTask
++import com.facebook.react.utils.AgpConfiguratorUtils.configureBuildConfigFields
++import com.facebook.react.utils.AgpConfiguratorUtils.configureDevPorts
++import com.facebook.react.utils.BackwardCompatUtils.configureBackwardCompatibilityReactMap
++import com.facebook.react.utils.DependencyUtils.configureDependencies
++import com.facebook.react.utils.DependencyUtils.configureRepositories
++import com.facebook.react.utils.DependencyUtils.readVersionAndGroupStrings
++import com.facebook.react.utils.JsonUtils
++import com.facebook.react.utils.NdkConfiguratorUtils.configureReactNativeNdk
++import com.facebook.react.utils.ProjectUtils.needsCodegenFromPackageJson
++import com.facebook.react.utils.findPackageJsonFile
++import java.io.File
++import kotlin.system.exitProcess
++import org.gradle.api.Plugin
++import org.gradle.api.Project
++import org.gradle.api.Task
++import org.gradle.internal.jvm.Jvm
++
++class ReactPlugin : Plugin<Project> {
++  override fun apply(project: Project) {
++    project.ext.set("newArchEnabled", false)
++    checkJvmVersion(project)
++    val extension = project.extensions.create("react", ReactExtension::class.java, project)
++
++    // We register a private extension on the rootProject so that project wide configs
++    // like codegen config can be propagated from app project to libraries.
++    val rootExtension =
++        project.rootProject.extensions.findByType(PrivateReactExtension::class.java)
++            ?: project.rootProject.extensions.create(
++                "privateReact", PrivateReactExtension::class.java, project)
++
++    // App Only Configuration
++    project.pluginManager.withPlugin("com.android.application") {
++      // We wire the root extension with the values coming from the app (either user populated or
++      // defaults).
++      rootExtension.root.set(extension.root)
++      rootExtension.reactNativeDir.set(extension.reactNativeDir)
++      rootExtension.codegenDir.set(extension.codegenDir)
++      rootExtension.nodeExecutableAndArgs.set(extension.nodeExecutableAndArgs)
++
++      project.afterEvaluate {
++        val reactNativeDir = extension.reactNativeDir.get().asFile
++        val propertiesFile = File(reactNativeDir, "ReactAndroid/gradle.properties")
++        val versionAndGroupStrings = readVersionAndGroupStrings(propertiesFile)
++        val versionString = versionAndGroupStrings.first
++        val groupString = versionAndGroupStrings.second
++        configureDependencies(project, versionString, groupString)
++        configureRepositories(project, reactNativeDir)
++      }
++
++      configureReactNativeNdk(project, extension)
++      configureBuildConfigFields(project)
++      configureDevPorts(project)
++      configureBackwardCompatibilityReactMap(project)
++
++      project.extensions.getByType(AndroidComponentsExtension::class.java).apply {
++        onVariants(selector().all()) { variant ->
++          project.configureReactTasks(variant = variant, config = extension)
++        }
++      }
++
++      // This is a legacy AGP api. Needed as AGP 7.3 is not consuming generated resources correctly.
++      // Can be removed as we bump to AGP 7.4 stable.
++      // This registers the $buildDir/generated/res/react/<variant> folder as a
++      // res folder to be consumed with the old AGP Apis which are not broken.
++      project.extensions.getByType(AppExtension::class.java).apply {
++        this.applicationVariants.all { variant ->
++          val isDebuggableVariant =
++              extension.debuggableVariants.get().any { it.equals(variant.name, ignoreCase = true) }
++          val targetName = variant.name.replaceFirstChar { it.uppercase() }
++          val bundleTaskName = "createBundle${targetName}JsAndAssets"
++          if (!isDebuggableVariant) {
++            variant.registerGeneratedResFolders(
++                project.layout.buildDirectory.files("generated/res/react/${variant.name}"))
++            variant.mergeResourcesProvider.get().dependsOn(bundleTaskName)
++          }
++        }
++      }
++      configureCodegen(project, extension, rootExtension, isLibrary = false)
++    }
++
++    // Library Only Configuration
++    project.pluginManager.withPlugin("com.android.library") {
++      configureCodegen(project, extension, rootExtension, isLibrary = true)
++    }
++  }
++
++  private fun checkJvmVersion(project: Project) {
++    val jvmVersion = Jvm.current()?.javaVersion?.majorVersion
++    if ((jvmVersion?.toIntOrNull() ?: 0) <= 8) {
++      project.logger.error(
++          """
++
++      ********************************************************************************
++
++      ERROR: requires JDK11 or higher.
++      Incompatible major version detected: '$jvmVersion'
++
++      ********************************************************************************
++
++      """
++              .trimIndent())
++      exitProcess(1)
++    }
++  }
++
++  /** This function sets up `react-native-codegen` in our Gradle plugin. */
++  @Suppress("UnstableApiUsage")
++  private fun configureCodegen(
++      project: Project,
++      localExtension: ReactExtension,
++      rootExtension: PrivateReactExtension,
++      isLibrary: Boolean
++  ) {
++    // First, we set up the output dir for the codegen.
++    val generatedSrcDir = File(project.buildDir, "generated/source/codegen")
++
++    // We specify the default value (convention) for jsRootDir.
++    // It's the root folder for apps (so ../../ from the Gradle project)
++    // and the package folder for library (so ../ from the Gradle project)
++    if (isLibrary) {
++      localExtension.jsRootDir.convention(project.layout.projectDirectory.dir("../"))
++    } else {
++      localExtension.jsRootDir.convention(localExtension.root)
++    }
++
++    val buildCodegenTask =
++        project.tasks.register("buildCodegenCLI", BuildCodegenCLITask::class.java) {
++          it.codegenDir.set(rootExtension.codegenDir)
++          val bashWindowsHome = project.findProperty("REACT_WINDOWS_BASH") as String?
++          it.bashWindowsHome.set(bashWindowsHome)
++
++          // Please note that appNeedsCodegen is triggering a read of the package.json at
++          // configuration time as we need to feed the onlyIf condition of this task.
++          // Therefore, the appNeedsCodegen needs to be invoked inside this lambda.
++          val needsCodegenFromPackageJson = project.needsCodegenFromPackageJson(rootExtension.root)
++          it.onlyIf { isLibrary || needsCodegenFromPackageJson }
++        }
++
++    // We create the task to produce schema from JS files.
++    val generateCodegenSchemaTask =
++        project.tasks.register(
++            "generateCodegenSchemaFromJavaScript", GenerateCodegenSchemaTask::class.java) { it ->
++              it.dependsOn(buildCodegenTask)
++              it.nodeExecutableAndArgs.set(rootExtension.nodeExecutableAndArgs)
++              it.codegenDir.set(rootExtension.codegenDir)
++              it.generatedSrcDir.set(generatedSrcDir)
++
++              // We're reading the package.json at configuration time to properly feed
++              // the `jsRootDir` @Input property of this task & the onlyIf. Therefore, the
++              // parsePackageJson should be invoked inside this lambda.
++              val packageJson = findPackageJsonFile(project, rootExtension.root)
++              val parsedPackageJson = packageJson?.let { JsonUtils.fromCodegenJson(it) }
++
++              val jsSrcsDirInPackageJson = parsedPackageJson?.codegenConfig?.jsSrcsDir
++              if (jsSrcsDirInPackageJson != null) {
++                it.jsRootDir.set(File(packageJson.parentFile, jsSrcsDirInPackageJson))
++              } else {
++                it.jsRootDir.set(localExtension.jsRootDir)
++              }
++              val needsCodegenFromPackageJson =
++                  project.needsCodegenFromPackageJson(rootExtension.root)
++              it.onlyIf { isLibrary || needsCodegenFromPackageJson }
++            }
++
++    // We create the task to generate Java code from schema.
++    val generateCodegenArtifactsTask =
++        project.tasks.register(
++            "generateCodegenArtifactsFromSchema", GenerateCodegenArtifactsTask::class.java) {
++              it.dependsOn(generateCodegenSchemaTask)
++              it.reactNativeDir.set(rootExtension.reactNativeDir)
++              it.nodeExecutableAndArgs.set(rootExtension.nodeExecutableAndArgs)
++              it.generatedSrcDir.set(generatedSrcDir)
++              it.packageJsonFile.set(findPackageJsonFile(project, rootExtension.root))
++              it.codegenJavaPackageName.set(localExtension.codegenJavaPackageName)
++              it.libraryName.set(localExtension.libraryName)
++
++              // Please note that appNeedsCodegen is triggering a read of the package.json at
++              // configuration time as we need to feed the onlyIf condition of this task.
++              // Therefore, the appNeedsCodegen needs to be invoked inside this lambda.
++              val needsCodegenFromPackageJson =
++                  project.needsCodegenFromPackageJson(rootExtension.root)
++              it.onlyIf { isLibrary || needsCodegenFromPackageJson }
++            }
++
++    // We update the android configuration to include the generated sources.
++    // This equivalent to this DSL:
++    //
++    // android { sourceSets { main { java { srcDirs += "$generatedSrcDir/java" } } } }
++    project.extensions.getByType(AndroidComponentsExtension::class.java).finalizeDsl { ext ->
++      ext.sourceSets.getByName("main").java.srcDir(File(generatedSrcDir, "java"))
++    }
++
++    // `preBuild` is one of the base tasks automatically registered by AGP.
++    // This will invoke the codegen before compiling the entire project.
++    project.tasks.named("preBuild", Task::class.java).dependsOn(generateCodegenArtifactsTask)
++  }
++}
+diff --git a/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/TaskConfiguration.kt b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/TaskConfiguration.kt
+new file mode 100644
+index 0000000..c7db4db
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/TaskConfiguration.kt
+@@ -0,0 +1,81 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++package com.facebook.react
++
++import com.android.build.api.variant.Variant
++import com.facebook.react.tasks.BundleHermesCTask
++import com.facebook.react.utils.NdkConfiguratorUtils.configureJsEnginePackagingOptions
++import com.facebook.react.utils.NdkConfiguratorUtils.configureNewArchPackagingOptions
++import com.facebook.react.utils.ProjectUtils.isHermesEnabled
++import com.facebook.react.utils.detectedCliFile
++import com.facebook.react.utils.detectedEntryFile
++import java.io.File
++import org.gradle.api.Project
++
++@Suppress("SpreadOperator", "UnstableApiUsage")
++internal fun Project.configureReactTasks(variant: Variant, config: ReactExtension) {
++  val targetName = variant.name.replaceFirstChar { it.uppercase() }
++  val targetPath = variant.name
++
++  // Resources: generated/assets/react/<variant>/index.android.bundle
++  val resourcesDir = File(buildDir, "generated/res/react/$targetPath")
++  // Bundle: generated/assets/react/<variant>/index.android.bundle
++  val jsBundleDir = File(buildDir, "generated/assets/react/$targetPath")
++  // Sourcemap: generated/sourcemaps/react/<variant>/index.android.bundle.map
++  val jsSourceMapsDir = File(buildDir, "generated/sourcemaps/react/$targetPath")
++  // Intermediate packager:
++  // intermediates/sourcemaps/react/<variant>/index.android.bundle.packager.map
++  // Intermediate compiler:
++  // intermediates/sourcemaps/react/<variant>/index.android.bundle.compiler.map
++  val jsIntermediateSourceMapsDir = File(buildDir, "intermediates/sourcemaps/react/$targetPath")
++
++  // The location of the cli.js file for React Native
++  val cliFile = detectedCliFile(config)
++
++  val isHermesEnabledInProject = project.isHermesEnabled
++  val isHermesEnabledInThisVariant =
++      if (config.enableHermesOnlyInVariants.get().isNotEmpty()) {
++        config.enableHermesOnlyInVariants.get().contains(variant.name) && isHermesEnabledInProject
++      } else {
++        isHermesEnabledInProject
++      }
++  val isDebuggableVariant =
++      config.debuggableVariants.get().any { it.equals(variant.name, ignoreCase = true) }
++
++  configureNewArchPackagingOptions(project, variant)
++  configureJsEnginePackagingOptions(config, variant, isHermesEnabledInThisVariant)
++
++  if (!isDebuggableVariant) {
++    val entryFileEnvVariable = System.getenv("ENTRY_FILE")
++    val bundleTask =
++        tasks.register("createBundle${targetName}JsAndAssets", BundleHermesCTask::class.java) {
++          it.root.set(config.root)
++          it.nodeExecutableAndArgs.set(config.nodeExecutableAndArgs)
++          it.cliFile.set(cliFile)
++          it.bundleCommand.set(config.bundleCommand)
++          it.entryFile.set(detectedEntryFile(config, entryFileEnvVariable))
++          it.extraPackagerArgs.set(config.extraPackagerArgs)
++          it.bundleConfig.set(config.bundleConfig)
++          it.bundleAssetName.set(config.bundleAssetName)
++          it.jsBundleDir.set(jsBundleDir)
++          it.resourcesDir.set(resourcesDir)
++          it.hermesEnabled.set(isHermesEnabledInThisVariant)
++          it.minifyEnabled.set(!isHermesEnabledInThisVariant)
++          it.devEnabled.set(false)
++          it.jsIntermediateSourceMapsDir.set(jsIntermediateSourceMapsDir)
++          it.jsSourceMapsDir.set(jsSourceMapsDir)
++          it.hermesCommand.set(config.hermesCommand)
++          it.hermesFlags.set(config.hermesFlags)
++          it.reactNativeDir.set(config.reactNativeDir)
++        }
++    // Currently broken inside AGP 7.3 We need to wait for a release of AGP 7.4 in order to use
++    // the addGeneratedSourceDirectory API.
++    // variant.sources.res?.addGeneratedSourceDirectory(bundleTask, BundleHermesCTask::resourcesDir)
++    variant.sources.assets?.addGeneratedSourceDirectory(bundleTask, BundleHermesCTask::jsBundleDir)
++  }
++}
+diff --git a/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelCodegenConfig.kt b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelCodegenConfig.kt
+new file mode 100644
+index 0000000..26d7f08
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelCodegenConfig.kt
+@@ -0,0 +1,15 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++package com.facebook.react.model
++
++data class ModelCodegenConfig(
++    val name: String?,
++    val type: String?,
++    val jsSrcsDir: String?,
++    val android: ModelCodegenConfigAndroid?
++)
+diff --git a/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelCodegenConfigAndroid.kt b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelCodegenConfigAndroid.kt
+new file mode 100644
+index 0000000..7619098
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelCodegenConfigAndroid.kt
+@@ -0,0 +1,10 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++package com.facebook.react.model
++
++data class ModelCodegenConfigAndroid(val javaPackageName: String?)
+diff --git a/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelPackageJson.kt b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelPackageJson.kt
+new file mode 100644
+index 0000000..96e2bd2
+--- /dev/null
++++ b/node_modules/react-native-gradle-plugin/bin/src/main/kotlin/com/facebook/react/model/ModelPackageJson.kt
+@@ -0,0 +1,10 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++package com.facebook.react.model
++
++data class ModelPackageJson(val codegenConfig: ModelCodegenConfig?)
+diff --git a/node_modules/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt b/node_modules/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
+index 25ee481..668e7e8 100644
+--- a/node_modules/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
++++ b/node_modules/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt
+@@ -33,6 +33,7 @@ import org.gradle.internal.jvm.Jvm
+ 
+ class ReactPlugin : Plugin<Project> {
+   override fun apply(project: Project) {
++    project.ext.set("newArchEnabled", false)
+     checkJvmVersion(project)
+     val extension = project.extensions.create("react", ReactExtension::class.java, project)
+ 

@@ -11,46 +11,44 @@
     "test": "jest"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "2.1.2",
-    "@react-native-community/cli-platform-android": "^20.0.0",
-    "@react-native-google-signin/google-signin": "^15.0.0",
-    "@react-navigation/bottom-tabs": "^7.4.4",
-    "@react-navigation/core": "^7.12.3",
-    "@react-navigation/native": "^7.1.16",
-    "@react-navigation/native-stack": "^7.3.23",
+    "@google/generative-ai": "^0.24.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-google-signin/google-signin": "^12.2.1",
+    "@react-navigation/bottom-tabs": "^6.5.20",
+    "@react-navigation/native": "^6.1.17",
+    "@react-navigation/native-stack": "^6.9.26",
     "@supabase/supabase-js": "^2.55.0",
-    "axios": "^1.11.0",
-    "body-parser": "^2.2.0",
+    "axios": "^1.7.2",
+    "body-parser": "^1.20.2",
     "buffer": "^6.0.3",
-    "expo": "^53.0.22",
-    "expo-auth-session": "~6.2.1",
-    "expo-crypto": "~14.1.5",
-    "expo-dev-client": "~5.2.4",
-    "expo-google-sign-in": "^10.1.1",
-    "expo-image-picker": "^16.1.4",
-    "expo-location": "~18.1.6",
-    "expo-web-browser": "~14.2.0",
-    "express": "^5.1.0",
-    "firebase": "^12.1.0",
-    "react": "19.0.0",
-    "react-native": "0.79.5",
-    "react-native-app-auth": "^8.0.3",
-    "react-native-gesture-handler": "~2.24.0",
-    "react-native-gradle-plugin": "^0.71.19",
-    "react-native-image-picker": "^8.2.1",
+    "expo": "^54.0.7",
+    "expo-auth-session": "~7.0.8",
+    "expo-crypto": "~15.0.7",
+    "expo-dev-client": "~6.0.12",
+    "expo-image-picker": "~17.0.8",
+    "expo-location": "~19.0.7",
+    "expo-status-bar": "~3.0.8",
+    "expo-web-browser": "^15.0.7",
+    "express": "^4.19.2",
+    "firebase": "^10.12.2",
+    "react": "19.1.0",
+    "react-native": "0.81.4",
+    "react-native-app-auth": "^7.1.0",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-image-picker": "^7.1.2",
     "react-native-inappbrowser-reborn": "^3.7.0",
     "react-native-razorpay": "^2.3.0",
-    "react-native-reanimated": "~3.17.4",
-    "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.11.1",
+    "react-native-reanimated": "~4.1.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
     "react-native-url-polyfill": "^2.0.0",
-    "react-native-vector-icons": "^10.3.0",
-    "supabase": "^2.34.3"
+    "react-native-vector-icons": "^10.1.0",
+    "supabase": "^1.178.2",
+    "xml2js": "^0.6.2"
   },
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "listUnknownPackages": false,
         "exclude": [
           "react-native-inappbrowser-reborn"
         ]
@@ -58,16 +56,12 @@
     }
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@expo/config-plugins": "~10.1.1",
-    "@react-native-community/cli": "^19.1.1",
-    "@types/react": "~19.0.10",
+    "@babel/core": "^7.20.0",
+    "@types/react": "19.1.13",
     "@types/react-native-razorpay": "^2.2.6",
     "@types/react-native-vector-icons": "^6.4.18",
-    "typescript": "~5.8.3"
-  },
-  "resolutions": {
-    "@expo/config-plugins": "~10.1.2"
+    "patch-package": "^8.0.0",
+    "typescript": "~5.3.3"
   },
   "private": true
 }

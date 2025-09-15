@@ -4,6 +4,7 @@
     "slug": "ownstore",
     "scheme": "ownstore",
     "owner": "ajay252",
+    "jsEngine": "jsc",
     "android": {
       "package": "com.ajay.ownstoredemo",
       "googleServicesFile": "./android/app/google-services.json"
