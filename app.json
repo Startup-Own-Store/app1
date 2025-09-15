@@ -7,7 +7,8 @@
     "jsEngine": "jsc",
     "android": {
       "package": "com.ajay.ownstoredemo",
-      "googleServicesFile": "./android/app/google-services.json"
+      "googleServicesFile": "./android/app/google-services.json",
+      "versionCode": 1
     },
     "ios": {
       "bundleIdentifier": "com.ajay.ownstoredemo"
