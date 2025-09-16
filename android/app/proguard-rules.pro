@@ -16,5 +16,7 @@
 -keep class com.google.android.gms.common.** { *; }
 -keep class com.google.android.gms.auth.api.** { *; }
 -keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep public class androidx.core.** { *; }
+
 
 # Add any project specific keep options here:

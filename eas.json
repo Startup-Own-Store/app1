@@ -12,22 +12,12 @@
       "distribution": "internal"
     },
     "production": {
-<<<<<<< HEAD
       "releaseChannel": "production",
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
       },
       "autoIncrement": true
-=======
-      "autoIncrement": true,
-      "android": {
-        "buildType": "app-bundle",
-        "ndk": {
-          "debugSymbols": true
-        }
-      }
->>>>>>> main
     },
     "development-simulator": {
       "developmentClient": true,
