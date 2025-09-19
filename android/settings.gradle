@@ -11,9 +11,8 @@ pluginManagement {
             url(reactNativeAndroidDir)
         }
     }
-    includeBuild("../node_modules/react-native-gradle-plugin")
+    includeBuild("../node_modules/@react-native/gradle-plugin")
 }
-
 rootProject.name = 'OwnStore'
 
 include(":app")
