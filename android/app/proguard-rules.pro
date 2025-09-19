@@ -11,10 +11,4 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
-# Google Sign-In ProGuard rules
--keep class com.google.android.gms.auth.** { *; }
--keep class com.google.android.gms.common.** { *; }
--keep class com.google.android.gms.auth.api.** { *; }
--keep class com.google.android.gms.auth.api.signin.** { *; }
-
 # Add any project specific keep options here:
