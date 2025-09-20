@@ -1,16 +1,14 @@
 {
   "expo": {
-    "name": "OwnStore",
+    "name": "main",
+    "displayName": "OwnStore",
     "slug": "ownstore",
     "scheme": "ownstore",
     "owner": "ajay252",
     "android": {
       "package": "com.ajay.ownstoredemo",
-      "googleServicesFile": "./android/app/google-services.json",
+      "googleServicesFile": "google-services.json",
       "versionCode": 1
-    },
-    "ios": {
-      "bundleIdentifier": "com.ajay.ownstoredemo"
     },
     "extra": {
       "eas": {
