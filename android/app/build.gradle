@@ -108,9 +108,9 @@ android {
         }
 
         release {
-            storeFile file("ajay.keystore")
+            storeFile file("newupload.keystore")
             storePassword "ajay123"
-            keyAlias "ajay"
+            keyAlias "newupload"
             keyPassword "ajay123"
         }
 
