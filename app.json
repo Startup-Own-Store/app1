@@ -18,7 +18,8 @@
     "plugins": [
       "expo-web-browser",
       "expo-dev-client",
-      "expo-location"
+      "expo-location",
+      "expo-font"
     ]
   }
 }

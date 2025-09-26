@@ -1,15 +1,24 @@
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
-  TextInput, FlatList, Image, ListRenderItem, StatusBar, Platform
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  TextInput,
+  FlatList,
+  Image,
+  ListRenderItem,
+  StatusBar,
+  Platform,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import { launchImageLibrary } from "react-native-image-picker";
+import { Buffer } from "buffer";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 //import { StatusBar } from "react-native";
 
-import supabase  from "../../SupabaseClient";  // 👈 Supabase client
+import supabase from "../../SupabaseClient"; // 👈 Supabase client
 
 // ---- Types ----
 type DietaryOptions = {
@@ -19,11 +28,21 @@ type DietaryOptions = {
 };
 
 type FormSection =
-  | { type: "input"; id: "itemName" | "price"; label: string; placeholder: string; keyboardType?: string }
+  | {
+      type: "input";
+      id: "itemName" | "price";
+      label: string;
+      placeholder: string;
+      keyboardType?: string;
+    }
   | { type: "textArea"; id: "description"; label: string; placeholder: string }
   | { type: "picker"; id: "category"; label: string }
   | { type: "header"; id: string; title: string }
-  | { type: "checkbox"; id: "vegetarian" | "glutenFree" | "vegan"; label: string }
+  | {
+      type: "checkbox";
+      id: "vegetarian" | "glutenFree" | "vegan";
+      label: string;
+    }
   | { type: "upload"; id: "upload" };
 
 // ---- Custom Checkbox ----
@@ -42,9 +61,25 @@ const CustomCheckbox: React.FC<{
 
 // ---- Form Sections ----
 const formSections: FormSection[] = [
-  { type: "input", id: "itemName", label: "Item Name", placeholder: "e.g. Chicken Sandwich" },
-  { type: "textArea", id: "description", label: "Description", placeholder: "e.g. Grilled chicken with mayo" },
-  { type: "input", id: "price", label: "Price", placeholder: "$", keyboardType: "decimal-pad" },
+  {
+    type: "input",
+    id: "itemName",
+    label: "Item Name",
+    placeholder: "e.g. Chicken Sandwich",
+  },
+  {
+    type: "textArea",
+    id: "description",
+    label: "Description",
+    placeholder: "e.g. Grilled chicken with mayo",
+  },
+  {
+    type: "input",
+    id: "price",
+    label: "Price",
+    placeholder: "$",
+    keyboardType: "decimal-pad",
+  },
   { type: "picker", id: "category", label: "Category" },
   { type: "header", id: "dietaryHeader", title: "Dietary Options" },
   { type: "checkbox", id: "vegetarian", label: "Vegetarian" },
@@ -61,6 +96,7 @@ const AddItemScreen: React.FC = () => {
   const [price, setPrice] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [image, setImage] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [dietaryOptions, setDietaryOptions] = useState<DietaryOptions>({
     vegetarian: false,
     glutenFree: false,
@@ -69,88 +105,99 @@ const AddItemScreen: React.FC = () => {
 
   const navigation = useNavigation();
 
-const pickImage = async () => {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'], // ← Use literal string(s) here
-    allowsEditing: true,
-    aspect: [4, 3],
-    quality: 1,
-  });
-
-  if (!result.canceled) {
-    setImage(result.assets[0].uri);
-  }
-};
-
-
-  // ---- Save Item ----
-const saveItem = async () => {
-  if (!itemName || !price) {
-    alert("Please fill all required fields");
-    return;
-  }
-
-  try {
-    // ---- Get current vendor/user (optional, since policy allows anon too) ----
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-    const userId = user?.id || "guest"; // fallback if anon uploads allowed
-
-    let imageUrl: string | null = null;
-
-    if (image) {
-      const uri = image; // from ImagePicker
-      const fileExt = uri.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `items/${userId}/${fileName}`;
-
-      // ---- Read file as base64 ----
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
+  const pickImage = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: "photo",
+        selectionLimit: 1,
+        includeBase64: true,
+        quality: 1,
       });
 
-      // ---- Convert base64 -> Uint8Array ----
-      const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      if (result && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.uri) setImage(asset.uri);
+        if (asset.base64) setImageBase64(asset.base64);
+      }
+    } catch (err: any) {
+      console.error("Image pick error", err);
+      alert("Failed to pick image");
+    }
+  };
 
-      // ---- Upload to Supabase ----
-      const { error: uploadError } = await supabase.storage
-        .from("item-images")
-        .upload(filePath, binary, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // ---- Get Public URL (requires SELECT policy) ----
-      const { data } = supabase.storage
-        .from("item-images")
-        .getPublicUrl(filePath);
-
-      imageUrl = data.publicUrl;
+  // ---- Save Item ----
+  const saveItem = async () => {
+    if (!itemName || !price) {
+      alert("Please fill all required fields");
+      return;
     }
 
-    // ---- Save item in DB ----
-    const { error } = await supabase.from("items").insert([
-      {
-        vendor_id: userId,
-        item_name: itemName,
-        description,
-        price: parseFloat(price),
-        category,
-        vegetarian: dietaryOptions.vegetarian,
-        gluten_free: dietaryOptions.glutenFree,
-        vegan: dietaryOptions.vegan,
-        image_url: imageUrl, // Supabase public URL
-      },
-    ]);
+    try {
+      // ---- Get current vendor/user (optional, since policy allows anon too) ----
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      const userId = user?.id || "guest"; // fallback if anon uploads allowed
 
-    if (error) throw error;
+      let imageUrl: string | null = null;
 
-    alert("Item saved successfully!");
-    navigation.goBack();
-  } catch (err: any) {
-    console.error("Error saving item:", err.message);
-    alert("Failed to save item");
-  }
-};
+      if (image) {
+        const uri = image; // may be file:// or content:// on Android
+        const fileExt = uri.split(".").pop() || "jpg";
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `items/${userId}/${fileName}`;
+
+        // Use base64 from pickImage when available
+        const base64 = imageBase64;
+
+        if (!base64) {
+          throw new Error("No base64 data available for the selected image");
+        }
+
+        // Convert base64 to buffer
+        const binary = Buffer.from(base64, "base64");
+
+        // ---- Upload to Supabase ----
+        const { error: uploadError } = await supabase.storage
+          .from("item-images")
+          .upload(filePath, binary, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // ---- Get Public URL (requires SELECT policy) ----
+        const { data } = supabase.storage
+          .from("item-images")
+          .getPublicUrl(filePath);
+
+        imageUrl = data.publicUrl;
+      }
+
+      // ---- Save item in DB ----
+      const { error } = await supabase.from("items").insert([
+        {
+          vendor_id: userId,
+          item_name: itemName,
+          description,
+          price: parseFloat(price),
+          category,
+          vegetarian: dietaryOptions.vegetarian,
+          gluten_free: dietaryOptions.glutenFree,
+          vegan: dietaryOptions.vegan,
+          image_url: imageUrl, // Supabase public URL
+        },
+      ]);
+
+      if (error) throw error;
+
+      alert("Item saved successfully!");
+      navigation.goBack();
+    } catch (err: any) {
+      console.error("Error saving item:", err.message);
+      alert("Failed to save item");
+    }
+  };
 
   // ---- Toggle checkbox ----
   const handleCheckboxChange = (option: keyof DietaryOptions) => {
@@ -181,7 +228,10 @@ const saveItem = async () => {
             <Text style={styles.label}>{item.label}</Text>
             <TextInput
               placeholder={item.placeholder}
-              style={[styles.textInput, { height: 100, textAlignVertical: "top" }]}
+              style={[
+                styles.textInput,
+                { height: 100, textAlignVertical: "top" },
+              ]}
               multiline
               value={description}
               onChangeText={setDescription}
@@ -200,9 +250,12 @@ const saveItem = async () => {
         return (
           <TouchableOpacity style={styles.uploadContainer} onPress={pickImage}>
             <Text style={styles.uploadTitle}>Upload Image</Text>
-           {image && image.startsWith("file") && (
-  <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />
-)}
+            {image && image.startsWith("file") && (
+              <Image
+                source={{ uri: image }}
+                style={{ width: 200, height: 200 }}
+              />
+            )}
           </TouchableOpacity>
         );
       case "header":
@@ -256,7 +309,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#fbfaf9",
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
