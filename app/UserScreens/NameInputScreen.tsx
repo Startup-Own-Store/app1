@@ -52,6 +52,7 @@ const NameInputScreen: React.FC = () => {
       return;
     }
 
+    
     try {
       const { error } = await supabase.auth.updateUser({
         data: { display_name: name },

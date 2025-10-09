@@ -112,6 +112,7 @@ const CreateVendorUserScreen = () => {
         if (userErr) throw userErr;
         const userId = userData?.user?.id || 'admin';
 
+        
         const uri = logoUri;
         const fileExt = uri.split('.').pop() || 'jpg';
         const fileName = `${Date.now()}.${fileExt}`;
