@@ -127,6 +127,7 @@ android {
         }
     }
     packagingOptions {
+        pickFirst '**/libc++_shared.so'
         jniLibs {
             useLegacyPackaging(findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
         }
@@ -191,6 +192,7 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
     implementation 'com.google.android.gms:play-services-base:18.3.0'
+    implementation 'com.google.firebase:firebase-bom:32.7.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

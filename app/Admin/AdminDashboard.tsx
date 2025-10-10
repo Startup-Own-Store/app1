@@ -13,7 +13,7 @@ const AdminDashboard = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await FirebaseClient.signOut();
     if (error) {
       Alert.alert('Logout Error', error.message);
     }

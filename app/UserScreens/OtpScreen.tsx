@@ -1,4 +1,3 @@
-// OTPScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -12,28 +11,34 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from 'react-native';
-import supabase from '../../SupabaseClient';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import auth, { PhoneAuthProvider } from '@react-native-firebase/auth';
 
-// ✅ Import your central navigation types from App.tsx
-import { RootStackParamList } from '../../App';
+// Define the RootStackParamList to match your App.tsx
+type RootStackParamList = {
+  Login: undefined;
+  OtpScreen: { verificationId?: string; phoneNumber: string };
+  VendorLogin: undefined;
+  DeliveryLogin: undefined;
+  AdminLogin: undefined;
+};
 
-// Define the specific types for this screen's route and navigation
 type OtpScreenRouteProp = RouteProp<RootStackParamList, 'OtpScreen'>;
 type OtpScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'OtpScreen'>;
 
 const OTPScreen = () => {
-  // ✅ Correctly typed navigation hooks
   const navigation = useNavigation<OtpScreenNavigationProp>();
   const route = useRoute<OtpScreenRouteProp>();
 
-  const phone = route.params?.phone;
+  // Get parameters passed from Login screen - note the correct parameter names
+  const { verificationId, phoneNumber } = route.params;
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputs = useRef<Array<TextInput | null>>([]);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [currentVerificationId, setCurrentVerificationId] = useState<string | null | undefined>(verificationId);
 
   // Countdown timer effect
   useEffect(() => {
@@ -46,61 +51,72 @@ const OTPScreen = () => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // Effect to handle missing phone number
+  // Effect to handle missing required parameters
   useEffect(() => {
-    if (!phone) {
-      Alert.alert('Error', 'Something went wrong. Please try again.', [
+    if (!phoneNumber) {
+      Alert.alert('Error', 'Phone number is required. Please try again.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     }
-  }, [phone, navigation]);
+    if (!verificationId) {
+      console.warn('No verificationId provided, user may need to resend OTP');
+    }
+  }, [verificationId, phoneNumber, navigation]);
 
   const handleOtpChange = (text: string, index: number) => {
     const newOtp = [...otp];
     newOtp[index] = text;
     setOtp(newOtp);
+
+    // Auto-focus next input
     if (text && index < 5) {
       inputs.current[index + 1]?.focus();
     }
+    // Auto-focus previous input on backspace
     if (text === '' && index > 0) {
-        inputs.current[index - 1]?.focus();
+      inputs.current[index - 1]?.focus();
     }
   };
 
   const handleConfirmCode = async () => {
     if (loading) return;
+    
     const enteredOtp = otp.join('');
     if (enteredOtp.length !== 6) {
       return Alert.alert('Error', 'Please enter the complete 6-digit code.');
     }
+
+    if (!currentVerificationId) {
+      return Alert.alert('Error', 'Verification ID is missing. Please resend the code.');
+    }
+    
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phone!,
-        token: enteredOtp,
-        type: 'sms',
-      });
-      if (error) {
-        Alert.alert('Verification Failed', error.message);
-        return;
+      // Create credential using verificationId and OTP
+      const credential = PhoneAuthProvider.credential(currentVerificationId, enteredOtp);
+      
+      // Sign in with the credential
+      const userCredential = await auth().signInWithCredential(credential);
+      
+      console.log('User signed in successfully:', userCredential.user);
+      
+      // Success - navigation will be handled by your auth state listener in App.tsx
+      Alert.alert('Success', 'Phone number verified successfully!');
+      
+    } catch (error: any) {
+      console.error('OTP Verification Error:', error);
+      
+      let errorMessage = 'Invalid verification code. Please try again.';
+      
+      if (error.code === 'auth/invalid-verification-code') {
+        errorMessage = 'Invalid verification code. Please check and try again.';
+      } else if (error.code === 'auth/session-expired') {
+        errorMessage = 'Verification code has expired. Please request a new one.';
+      } else if (error.code === 'auth/invalid-verification-id') {
+        errorMessage = 'Invalid verification session. Please request a new code.';
       }
-
-      // Update raw_user_meta_data with role "user"
-      const { data: user, error: userError } = await supabase.auth.updateUser({
-        data: {
-          role: 'user',
-        },
-      });
-
-      if (userError) {
-        Alert.alert('Error', 'Failed to update user role.');
-        return;
-      }
-
-      // Navigate to NameInputScreen after successful OTP login
-      navigation.navigate('NameInputScreen' as never);
-    } catch (err) {
-      Alert.alert('An Unexpected Error Occurred', 'Please try again.');
+      
+      Alert.alert('Verification Failed', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -108,22 +124,33 @@ const OTPScreen = () => {
 
   const handleResendCode = async () => {
     if (countdown > 0) return;
+    
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: phone! });
-    if (error) {
-      Alert.alert('Error', 'Failed to resend code.');
-    } else {
-      Alert.alert('Success', 'A new code has been sent.');
+    try {
+      // Request new OTP using the phoneNumber
+      const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
+      
+      Alert.alert('Success', 'A new verification code has been sent.');
+      
+      // Update the current verification ID
+      setCurrentVerificationId(confirmation.verificationId);
+      
+      // Reset OTP inputs and countdown
       setOtp(['', '', '', '', '', '']);
       setCountdown(60);
-      // ✅ Improved UX: Focus on the first input
       inputs.current[0]?.focus();
+      
+    } catch (error: any) {
+      console.error('Resend OTP Error:', error);
+      Alert.alert('Error', 'Failed to resend verification code. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  if (!phone) {
-    return null; // Render nothing while navigating back
+  // Don't render if phoneNumber is missing
+  if (!phoneNumber) {
+    return null;
   }
 
   return (
@@ -133,43 +160,80 @@ const OTPScreen = () => {
         style={styles.container}
       >
         <View style={styles.container}>
+          {/* Header Section */}
           <View style={styles.header}>
             <Text style={styles.title}>Verify Your Number</Text>
             <Text style={styles.subtitle}>
-              Enter the 6-digit code sent to your phone.
+              Enter the 6-digit code sent to {phoneNumber}
             </Text>
           </View>
 
+          {/* Form Section */}
           <View style={styles.formContainer}>
+            {/* OTP Input */}
             <View style={styles.otpContainer}>
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
                   ref={(ref) => { inputs.current[index] = ref; }}
-                  style={styles.otpInput}
+                  style={[
+                    styles.otpInput,
+                    digit ? styles.otpInputFilled : null
+                  ]}
                   value={digit}
                   onChangeText={(text) => handleOtpChange(text, index)}
                   keyboardType="number-pad"
                   maxLength={1}
+                  selectTextOnFocus
                 />
               ))}
             </View>
+
+            {/* Confirm Button */}
             <TouchableOpacity
               onPress={handleConfirmCode}
-              disabled={loading}
-              style={[styles.continueButton, { opacity: loading ? 0.5 : 1 }]}
+              disabled={loading || !currentVerificationId}
+              style={[styles.continueButton, { 
+                opacity: (loading || !currentVerificationId) ? 0.5 : 1 
+              }]}
             >
               <Text style={styles.continueButtonText}>
-                {loading ? 'Verifying...' : 'Confirm Code'}
+                {loading ? 'Verifying...' : 'Verify Code'}
               </Text>
             </TouchableOpacity>
+
+            {/* Show message if no verificationId */}
+            {!currentVerificationId && (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  Please request a new verification code to continue
+                </Text>
+              </View>
+            )}
+
+            {/* Resend Code */}
             <TouchableOpacity
               style={styles.resendContainer}
               onPress={handleResendCode}
-              disabled={countdown > 0}
+              disabled={countdown > 0 || loading}
             >
-              <Text style={[styles.resendText, { opacity: countdown > 0 ? 0.5 : 1 }]}>
-                Didn't receive the code? {countdown > 0 ? `Resend in ${countdown}s` : 'Resend'}
+              <Text style={[styles.resendText, { 
+                opacity: (countdown > 0 || loading) ? 0.5 : 1 
+              }]}>
+                {countdown > 0 
+                  ? `Resend code in ${countdown}s` 
+                  : 'Didn\'t receive code? Resend'
+                }
+              </Text>
+            </TouchableOpacity>
+
+            {/* Back Button */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.backButtonText}>
+                Change Phone Number
               </Text>
             </TouchableOpacity>
           </View>
@@ -206,6 +270,7 @@ const styles = StyleSheet.create({
     color: '#8a7260',
     marginTop: 8,
     textAlign: 'center',
+    lineHeight: 22,
   },
   formContainer: {
     paddingHorizontal: 24,
@@ -227,6 +292,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8dbce',
   },
+  otpInputFilled: {
+    borderColor: '#ec8627',
+    backgroundColor: '#fff9f5',
+  },
   continueButton: {
     backgroundColor: '#ec8627',
     height: 52,
@@ -240,6 +309,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#181411',
   },
+  warningContainer: {
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#d9534f',
+    textAlign: 'center',
+  },
   resendContainer: {
     alignItems: 'center',
     marginTop: 24,
@@ -247,6 +326,15 @@ const styles = StyleSheet.create({
   resendText: {
     fontSize: 14,
     color: '#8a7260',
+  },
+  backButton: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  backButtonText: {
+    fontSize: 14,
+    color: '#ec8627',
+    fontWeight: '500',
   },
 });
 

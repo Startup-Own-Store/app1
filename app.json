@@ -18,7 +18,9 @@
     "plugins": [
       "expo-web-browser",
       "expo-dev-client",
-      "expo-location"
+      "expo-location",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ]
   }
 }

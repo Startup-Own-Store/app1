@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1054963152708-2078omssn8f9tc35nrk53jj3n7g3qq4j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ajay.ownstoredemo",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "1054963152708-sj0h84njoha7ov95jr8qdmtrhpkitl8q.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

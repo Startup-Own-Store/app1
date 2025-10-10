@@ -20,26 +20,31 @@ const NameInputScreen: React.FC = () => {
   // Update the `Display name` column using Supabase Authentication API
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter your name.');
-      return;
+      return Alert.alert('Error', 'Please enter your name.');
     }
 
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { display_name: name },
-      });
-
-      if (error) {
-        console.error('Error updating name:', error);
-        Alert.alert('Error', 'Failed to save name.');
-        return;
+      const firebaseUser = FirebaseClient.getCurrentUser();
+      if (!firebaseUser) {
+        throw new Error('No authenticated user found');
       }
 
-      Alert.alert('Success', 'Name saved successfully!');
-      navigation.navigate('MainUser' as never);
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      Alert.alert('Error', 'An unexpected error occurred.');
+      // Update user name in Supabase
+      const { error } = await supabase
+        .from('users')
+        .update({ name: name.trim() })
+        .eq('firebase_uid', firebaseUser.uid);
+
+      if (error) throw error;
+
+      Alert.alert('Success', 'Profile updated successfully!');
+      // Navigation will be handled by App.tsx auth state change
+    } catch (error) {
+      console.error('Error updating name:', error);
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 

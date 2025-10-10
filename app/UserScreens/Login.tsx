@@ -472,129 +472,128 @@
 
 
 
-// Login.tsx
 import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
   TextInput,
-  Platform,
-  StatusBar,
-  KeyboardAvoidingView,
+  TouchableOpacity,
+  StyleSheet,
   Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
-import supabase from '../../SupabaseClient';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StackNavigationProp } from '@react-navigation/stack';
+import auth from '@react-native-firebase/auth';
 
-// ✅ MODIFIED: Added AdminLogin to the type definition
-export type RootStackParamList = {
+// Define navigation types
+type RootStackParamList = {
   Login: undefined;
-  OtpScreen: { phone: string };
+  OtpScreen: { verificationId?: string; phoneNumber: string };
   VendorLogin: undefined;
   DeliveryLogin: undefined;
-  AdminLogin: undefined; // <-- ADDED
-  Main: undefined;
-  CreateUser: { role: 'vendor' | 'delivery' };
+  AdminLogin: undefined;
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
+type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
-const LoginScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
+const LoginScreen: React.FC = () => {
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
-  const [phone, setPhone] = useState('');
+  const navigation = useNavigation<LoginScreenNavigationProp>();
 
-  const sendCode = async () => {
-    if (phone.length !== 10) {
-      return Alert.alert('Error', 'Please enter a valid 10-digit phone number.');
+  const handleSendOtp = async () => {
+    if (!phoneNumber.trim() || phoneNumber.length !== 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+      return;
     }
-    if (loading) return;
 
     setLoading(true);
-    const fullPhoneNumber = `+91${phone}`;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: fullPhoneNumber,
-    });
-
-    if (error) {
-      Alert.alert('Error sending code', error.message);
-    } else {
-      navigation.navigate('OtpScreen', { phone: fullPhoneNumber });
+    try {
+      const fullPhoneNumber = `+91${phoneNumber}`;
+      
+      // Use Firebase Auth with the new modular API
+      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);
+      
+      Alert.alert('Success', 'OTP sent successfully!');
+      
+      navigation.navigate('OtpScreen', {
+        verificationId: confirmation.verificationId ?? '',
+        phoneNumber: fullPhoneNumber,
+      });
+      
+    } catch (error: any) {
+      console.error('OTP Error:', error);
+      Alert.alert('Error', error.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
+      <KeyboardAvoidingView 
+        style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingContainer}
       >
-        <View style={styles.container}>
-          {/* Header Section */}
-          <View style={styles.header}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.formContainer}>
             <Text style={styles.title}>Own Store</Text>
             <Text style={styles.subtitle}>Enter your phone number to continue</Text>
-          </View>
-
-          {/* Form Section */}
-          <View style={styles.formContainer}>
+            
             <View style={styles.inputContainer}>
               <Text style={styles.countryCode}>+91</Text>
               <TextInput
-                style={styles.textInput}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="Enter your phone number"
+                style={styles.input}
+                placeholder="Enter phone number"
                 placeholderTextColor="#8a7260"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
                 maxLength={10}
               />
             </View>
-
-            <TouchableOpacity
-              style={[styles.continueButton, { opacity: loading ? 0.5 : 1 }]}
-              onPress={sendCode}
+            
+            <TouchableOpacity 
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleSendOtp}
               disabled={loading}
             >
-              <Text style={styles.continueButtonText}>
-                {loading ? 'Sending...' : 'Continue'}
+              <Text style={styles.buttonText}>
+                {loading ? 'Sending OTP...' : 'Continue'}
               </Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Footer Section */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Other Login Options</Text>
-            {/* ✅ MODIFIED: Container for stacked buttons */}
-            <View style={styles.footerButtonsContainer}>
-              <TouchableOpacity
-                style={styles.footerButton}
+            <View style={styles.loginOptions}>
+              <Text style={styles.optionsTitle}>Other Login Options</Text>
+              
+              <TouchableOpacity 
+                style={styles.linkButton}
                 onPress={() => navigation.navigate('VendorLogin')}
               >
-                <Text style={styles.footerButtonText}>Vendor Login</Text>
+                <Text style={styles.linkText}>Vendor Login</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.footerButton}
+              
+              <TouchableOpacity 
+                style={styles.linkButton}
                 onPress={() => navigation.navigate('DeliveryLogin')}
               >
-                <Text style={styles.footerButtonText}>Delivery Login</Text>
+                <Text style={styles.linkText}>Delivery Partner Login</Text>
               </TouchableOpacity>
-              {/* ✅ ADDED: Admin Login Button */}
-              <TouchableOpacity
-                style={styles.footerButton}
+              
+              <TouchableOpacity 
+                style={styles.linkButton}
                 onPress={() => navigation.navigate('AdminLogin')}
               >
-                <Text style={styles.footerButtonText}>Admin Login</Text>
+                <Text style={styles.linkText}>Admin Login</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -606,13 +605,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#fcfaf8',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  keyboardAvoidingContainer: { flex: 1 },
-  container: { flex: 1, justifyContent: 'space-between', paddingHorizontal: 24 },
-  header: { alignItems: 'center', paddingTop: 60, paddingBottom: 40 },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#181411' },
-  subtitle: { fontSize: 16, color: '#8a7260', marginTop: 8 },
+  container: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+  },
   formContainer: {
-    // This container can be used for the main form elements
+    flex: 1,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+    color: '#181411',
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 40,
+    color: '#8a7260',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -621,37 +637,56 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 56,
     paddingHorizontal: 16,
+    marginBottom: 20,
   },
-  countryCode: { fontSize: 16, fontWeight: '500', color: '#181411', marginRight: 8 },
-  textInput: { flex: 1, height: '100%', fontSize: 16, color: '#181411' },
-  continueButton: {
+  countryCode: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginRight: 8,
+    color: '#181411',
+  },
+  input: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: '#181411',
+  },
+  button: {
     backgroundColor: '#ec8627',
     height: 52,
     borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginBottom: 20,
   },
-  continueButtonText: { fontSize: 16, fontWeight: 'bold', color: '#181411' },
-  footer: { alignItems: 'center', paddingBottom: 24 },
-  footerText: { fontSize: 14, color: '#8a7260', marginBottom: 16 },
-  // ✅ MODIFIED: Styles for the stacked buttons
-  footerButtonsContainer: {
-    width: '100%',
-    alignItems: 'stretch', // Makes buttons take full width
+  buttonDisabled: {
+    opacity: 0.5,
   },
-  footerButton: {
-    backgroundColor: '#f5f2f0',
-    paddingVertical: 14, // Increased padding to make buttons bigger
-    paddingHorizontal: 16,
-    borderRadius: 12, // Slightly larger radius
-    marginBottom: 12, // Space between stacked buttons
-  },
-  footerButtonText: {
-    fontSize: 14, // Slightly larger font
-    fontWeight: 'bold',
+  buttonText: {
     color: '#181411',
-    textAlign: 'center', // Center the text
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  loginOptions: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  optionsTitle: {
+    fontSize: 14,
+    color: '#8a7260',
+    marginBottom: 16,
+  },
+  linkButton: {
+    backgroundColor: '#f5f2f0',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    marginVertical: 4,
+  },
+  linkText: {
+    color: '#181411',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 

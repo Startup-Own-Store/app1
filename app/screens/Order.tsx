@@ -11,7 +11,7 @@ import {
   ScrollView,
   RefreshControl,
 } from "react-native";
-import { MaterialIcons } from '@expo/vector-icons';
+// import { MaterialIcons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient';
 
 type VendorHomeScreenProps = {
@@ -407,7 +407,7 @@ const handleCompleteOrder = async (orderId: string) => {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={24} color="#1c140c" />
+            {/* <MaterialIcons name="arrow-back" size={24} color="#1c140c" /> */}
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Vendor Dashboard</Text>
           <View style={styles.headerSpacer} />
@@ -463,7 +463,7 @@ const handleCompleteOrder = async (orderId: string) => {
 
             {orders.length === 0 && (
               <View style={styles.emptyContainer}>
-                <MaterialIcons name="receipt" size={64} color="#ccc" />
+                {/* <MaterialIcons name="receipt" size={64} color="#ccc" /> */}
                 <Text style={styles.emptyText}>No orders yet</Text>
               </View>
             )}
