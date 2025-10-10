@@ -12,7 +12,13 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle",
+        "ndk": {
+          "debugSymbols": true
+        }
+      }
     },
     "development-simulator": {
       "developmentClient": true,
