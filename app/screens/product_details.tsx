@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import supabase from '../../SupabaseClient'; // adjust path
 

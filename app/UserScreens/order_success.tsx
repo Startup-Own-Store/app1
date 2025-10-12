@@ -16,7 +16,7 @@ import React, { useState } from 'react';
 // definitions for react-native-vector-icons are not installed.
 // Run this command in your terminal to fix it:
 // npm install @types/react-native-vector-icons --save-dev
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const ratingDistribution = [
     { stars: 5, percentage: '40%' },

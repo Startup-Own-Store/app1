@@ -8,7 +8,17 @@
     "android": {
       "package": "com.ajay.ownstoredemo",
       "googleServicesFile": "google-services.json",
-      "versionCode": 1
+      "versionCode": 1,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyClZ3TXRsXBWRcaZp_kcw5LaxJNK9LM83Q"
+        }
+      }
+    },
+    "ios": {
+      "config": {
+        "googleMapsApiKey": "AIzaSyClZ3TXRsXBWRcaZp_kcw5LaxJNK9LM83Q"
+      }
     },
     "extra": {
       "eas": {
@@ -18,7 +28,12 @@
     "plugins": [
       "expo-web-browser",
       "expo-dev-client",
-      "expo-location"
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUseUsageDescription": "Allow OwnStore to use your location."
+        }
+      ]
     ]
   }
 }

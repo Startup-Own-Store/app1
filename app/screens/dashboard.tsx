@@ -16,7 +16,7 @@ import {
 // definitions for react-native-vector-icons are not installed.
 // Run this command in your terminal to fix it:
 // npm install @types/react-native-vector-icons --save-dev
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient';
 
 // Combine all screen elements into a single data array for FlatList

@@ -12,7 +12,7 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient'; // Import your Supabase client
 
 // Define types

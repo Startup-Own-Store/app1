@@ -17,7 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 // definitions for react-native-vector-icons are not installed.
 // Run this command in your terminal to fix it:
 // npm install @types/react-native-vector-icons --save-dev
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const OrderTrackingScreen = ({ onBack, navigation }: { onBack?: () => void; navigation: any }) => {
   const [orders, setOrders] = useState<any[]>([]);

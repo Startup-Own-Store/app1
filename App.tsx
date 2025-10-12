@@ -45,6 +45,9 @@ import OrderAcceptedScreen from './app/screens/CheckOut';
 import AddItemScreen from './app/screens/add_item';
 import ProductDetailsScreen from './app/screens/product_details';
 import UserOrderDetails from './app/UserScreens/UserOrderDetails';
+import VendorHomeScreen from './app/screens/Order';
+import VendorProfileScreen from './app/screens/VendorProfileScreen';
+import VendorAddressMapScreen from './app/screens/VendorAddressMapScreen';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -91,6 +94,8 @@ export type RootStackParamList = {
   VendorHome: undefined;
   AddItemScreen: undefined;
   ProductDetails: { itemId: string };
+  VendorProfile: undefined;
+  VendorAddressMap: undefined;
 
   // --- User Order Details Screen ---
   UserOrderDetails: { order: any };
@@ -159,6 +164,10 @@ export default function App() {
               <Stack.Screen name="OrderDetails" component={OrderAcceptedScreen} />
               <Stack.Screen name="AddItemScreen" component={AddItemScreen} />
               <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+              <Stack.Screen name="VendorHome" component={VendorHomeScreen} />
+              <Stack.Screen name="VendorProfile" component={VendorProfileScreen} />
+              <Stack.Screen name="VendorAddressMap" component={VendorAddressMapScreen} />
+              
 
             </>
           ) : userRole === 'delivery' ? (

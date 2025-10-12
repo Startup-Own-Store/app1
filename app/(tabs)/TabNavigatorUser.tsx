@@ -1,7 +1,7 @@
 // // import React from 'react';
 // // import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // // import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// // import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+// // import { MaterialIcons } from '@expo/vector-icons';
 
 // // import OrderTrackingScreen from '../screens/Order';
 // // import CheckoutScreen from '../screens/CheckOut';
@@ -73,7 +73,7 @@
 // import React from 'react';
 // import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+// import { MaterialIcons } from '@expo/vector-icons';
 
 // // Import your actual screens
 // import OrderTrackingScreen from '../screens/Order'; 

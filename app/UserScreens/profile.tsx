@@ -11,7 +11,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient';// Adjust the import based on your project structure
 
 const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackOrder?: () => void }) => {
