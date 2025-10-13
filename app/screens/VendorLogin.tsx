@@ -11,29 +11,57 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import supabase from '../../SupabaseClient';
+ 
+ const VendorLoginScreen = () => {
+  const navigation = useNavigation();
+   const [email, setEmail] = useState('');
+   const [password, setPassword] = useState('');
+ 
+   // ✅ Supabase Email/Password sign-in function
+ const handleEmailSignIn = async () => {
+   if (!email || !password) {
+     return Alert.alert("Error", "Please enter both email and password.");
+   }
 
-const VendorLoginScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+   const { data, error } = await supabase.auth.signInWithPassword({
+     email,
+     password,
+   });
 
-  // ✅ Supabase Email/Password sign-in function
-  const handleEmailSignIn = async () => {
-    if (!email || !password) {
-      return Alert.alert("Error", "Please enter both email and password.");
-    }
+   if (error) {
+     return Alert.alert("Sign In Error", error.message);
+   }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+   const user = data?.user;
+   if (!user) {
+     return Alert.alert("Sign In Error", "No user returned from sign in.");
+   }
 
-    if (error) {
-      Alert.alert("Sign In Error", error.message);
-    }
-    // If successful, the onAuthStateChange listener in your main App.tsx
-    // will handle navigation to the correct part of the app.
-  };
+   // Check vendor profile and navigate accordingly
+   const profileComplete = await checkVendorProfile(user.id);
+   if (profileComplete) {
+     navigation.navigate('VendorHome' as never);
+   } else {
+     navigation.navigate('VendorProfile' as never);
+   }
+ };
+
+  const checkVendorProfile = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('vendor_profiles')
+    .select('profile_completed, address_verified')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    console.error('Error checking vendor profile:', error);
+    return false;
+  }
+
+  return data?.profile_completed && data?.address_verified;
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
