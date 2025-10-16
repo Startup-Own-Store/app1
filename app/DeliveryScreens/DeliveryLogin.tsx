@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient';
 
 const DeliveryLoginScreen = () => {
@@ -59,6 +60,10 @@ const DeliveryLoginScreen = () => {
     }
   };
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -66,6 +71,13 @@ const DeliveryLoginScreen = () => {
         style={styles.keyboardAvoidingContainer}
       >
         <View style={styles.container}>
+          {/* App Bar with Back Button */}
+          <View style={styles.appBar}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#181411" />
+            </TouchableOpacity>
+          </View>
+
           {/* Header Section */}
           <View style={styles.header}>
             <Text style={styles.title}>Delivery Login</Text>
@@ -114,7 +126,6 @@ const DeliveryLoginScreen = () => {
   );
 };
 
-// --- Styles (Consistent with your theme) ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -129,9 +140,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 24,
   },
+  appBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  backButton: {
+    padding: 8,
+  },
+  appBarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#181411',
+  },
+  placeholder: {
+    width: 40,
+  },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 40,
   },
   title: {
@@ -173,8 +202,6 @@ const styles = StyleSheet.create({
     color: '#181411',
   },
   footer: {
-    // This is an empty view to push the content up,
-    // creating a balanced layout.
     height: 100,
   },
 });

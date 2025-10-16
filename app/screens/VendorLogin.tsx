@@ -12,56 +12,69 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient';
- 
- const VendorLoginScreen = () => {
+
+const VendorLoginScreen = () => {
   const navigation = useNavigation();
-   const [email, setEmail] = useState('');
-   const [password, setPassword] = useState('');
- 
-   // ✅ Supabase Email/Password sign-in function
- const handleEmailSignIn = async () => {
-   if (!email || !password) {
-     return Alert.alert("Error", "Please enter both email and password.");
-   }
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-   const { data, error } = await supabase.auth.signInWithPassword({
-     email,
-     password,
-   });
+  const handleEmailSignIn = async () => {
+    if (!email || !password) {
+      return Alert.alert("Error", "Please enter both email and password.");
+    }
 
-   if (error) {
-     return Alert.alert("Sign In Error", error.message);
-   }
+    setLoading(true);
 
-   const user = data?.user;
-   if (!user) {
-     return Alert.alert("Sign In Error", "No user returned from sign in.");
-   }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-   // Check vendor profile and navigate accordingly
-   const profileComplete = await checkVendorProfile(user.id);
-   if (profileComplete) {
-     navigation.navigate('VendorHome' as never);
-   } else {
-     navigation.navigate('VendorProfile' as never);
-   }
- };
+      if (error) {
+        return Alert.alert("Sign In Error", error.message);
+      }
+
+      const user = data?.user;
+      if (!user) {
+        return Alert.alert("Sign In Error", "No user returned from sign in.");
+      }
+
+      // Check vendor profile and navigate accordingly
+      const profileComplete = await checkVendorProfile(user.id);
+      if (profileComplete) {
+        navigation.navigate('VendorHome' as never);
+      } else {
+        navigation.navigate('VendorProfile' as never);
+      }
+    } catch (err: any) {
+      Alert.alert("An Unexpected Error Occurred", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkVendorProfile = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('vendor_profiles')
-    .select('profile_completed, address_verified')
-    .eq('user_id', userId)
-    .single();
+    const { data, error } = await supabase
+      .from('vendor_profiles')
+      .select('profile_completed, address_verified')
+      .eq('user_id', userId)
+      .single();
 
-  if (error) {
-    console.error('Error checking vendor profile:', error);
-    return false;
-  }
+    if (error) {
+      console.error('Error checking vendor profile:', error);
+      return false;
+    }
 
-  return data?.profile_completed && data?.address_verified;
-};
+    return data?.profile_completed && data?.address_verified;
+  };
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -70,6 +83,13 @@ import supabase from '../../SupabaseClient';
         style={styles.keyboardAvoidingContainer}
       >
         <View style={styles.container}>
+          {/* App Bar with Back Button */}
+          <View style={styles.appBar}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#181411" />
+            </TouchableOpacity>
+          </View>
+
           {/* Header Section */}
           <View style={styles.header}>
             <Text style={styles.title}>Vendor Login</Text>
@@ -99,8 +119,14 @@ import supabase from '../../SupabaseClient';
                 secureTextEntry
               />
             </View>
-            <TouchableOpacity style={styles.continueButton} onPress={handleEmailSignIn}>
-              <Text style={styles.continueButtonText}>Sign In</Text>
+            <TouchableOpacity 
+              style={[styles.continueButton, { opacity: loading ? 0.7 : 1 }]} 
+              onPress={handleEmailSignIn}
+              disabled={loading}
+            >
+              <Text style={styles.continueButtonText}>
+                {loading ? 'Signing In...' : 'Sign In'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -112,7 +138,6 @@ import supabase from '../../SupabaseClient';
   );
 };
 
-// --- Styles (Consistent with your theme) ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -127,9 +152,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 24,
   },
+  appBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  backButton: {
+    padding: 8,
+  },
+  appBarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#181411',
+  },
+  placeholder: {
+    width: 40,
+  },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 40,
   },
   title: {
@@ -171,8 +214,6 @@ const styles = StyleSheet.create({
     color: '#181411',
   },
   footer: {
-    // This is an empty view to push the content up,
-    // creating a balanced layout.
     height: 100,
   },
 });
