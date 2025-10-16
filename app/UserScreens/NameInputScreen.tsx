@@ -12,12 +12,15 @@ import {
 } from 'react-native';
 import supabase from '../../SupabaseClient';
 import { useNavigation } from '@react-navigation/native';
+import auth from '@react-native-firebase/auth';
+import { syncFirebaseUserToSupabase } from '../utils/firebaseSupabaseSync';
 
 const NameInputScreen: React.FC = () => {
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
-  // Update the `Display name` column using Supabase Authentication API
+  // Update the display name in Firebase and sync to Supabase
   const handleSave = async () => {
     if (!name.trim()) {
       return Alert.alert('Error', 'Please enter your name.');
@@ -25,18 +28,27 @@ const NameInputScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      const firebaseUser = FirebaseClient.getCurrentUser();
+      const firebaseUser = auth().currentUser;
       if (!firebaseUser) {
         throw new Error('No authenticated user found');
       }
 
-      // Update user name in Supabase
-      const { error } = await supabase
-        .from('users')
-        .update({ name: name.trim() })
-        .eq('firebase_uid', firebaseUser.uid);
+      // Update Firebase user profile
+      await firebaseUser.updateProfile({
+        displayName: name.trim(),
+      });
 
-      if (error) throw error;
+      console.log('Display name updated in Firebase');
+
+      // ✅ Sync updated user data to Supabase
+      const { success, error: syncError } = await syncFirebaseUserToSupabase('user');
+
+      if (!success) {
+        console.warn('Failed to sync to Supabase:', syncError);
+        // Don't block the user - they can still proceed
+      } else {
+        console.log('User profile synced to Supabase successfully');
+      }
 
       Alert.alert('Success', 'Profile updated successfully!');
       // Navigation will be handled by App.tsx auth state change

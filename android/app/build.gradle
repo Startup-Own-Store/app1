@@ -21,7 +21,7 @@ react {
     bundleCommand = "export:embed"
 
     /* Folders */
-    //   The root of your project, i.e. where "package.json" lives. Default is '../..'
+     //   The root of your project, i.e. where "package.json" lives. Default is '../..'
     // root = file("../../")
     //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
     // reactNativeDir = file("../../node_modules/react-native")
@@ -85,18 +85,17 @@ android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk 36
+    compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.ajay.ownstoredemo'
     defaultConfig {
         applicationId 'com.ajay.ownstoredemo'
-        minSdk 24
-        targetSdk 36
+        minSdkVersion 24
+        targetSdkVersion 36
         versionCode 1
-        versionName "1.0"
-
+        versionName "1.0.0"
         manifestPlaceholders = [
-                appAuthRedirectScheme: "ownstore"
+            appAuthRedirectScheme: 'com.ajay.ownstoredemo'
         ]
     }
     signingConfigs {
@@ -106,39 +105,28 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-
-        release {
-            storeFile file("newupload.keystore")
-            storePassword "ajay123"
-            keyAlias "newupload"
-            keyPassword "ajay123"
-        }
-
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release
-            shrinkResources false
-            minifyEnabled false
-            crunchPngs false
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug
+            shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
+            minifyEnabled enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
         }
     }
     packagingOptions {
-        pickFirst '**/libc++_shared.so'
         jniLibs {
-            useLegacyPackaging(findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
+            useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
         }
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
-    }
-
-    lint {
-        checkReleaseBuilds = false
-        abortOnError = false
     }
 }
 
@@ -165,6 +153,7 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation 'androidx.browser:browser:1.8.0'
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
@@ -189,10 +178,12 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+}
 
-    implementation 'com.google.android.gms:play-services-auth:20.7.0'
-    implementation 'com.google.android.gms:play-services-base:18.3.0'
-    implementation 'com.google.firebase:firebase-bom:32.7.0'
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.browser:browser:1.8.0'
+    }
 }
 
 apply plugin: 'com.google.gms.google-services'
