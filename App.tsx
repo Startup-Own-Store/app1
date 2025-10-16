@@ -36,7 +36,6 @@ import TrackOrderScreen from './app/UserScreens/track_order';
 import ProfileScreen from './app/UserScreens/profile';
 
 // Import Vendor screens
-
 import RestaurantMenuScreen from './app/UserScreens/shops';
 import ProductDetailScreen from './app/UserScreens/food_details';
 import CartScreen from './app/UserScreens/cart';
@@ -47,6 +46,10 @@ import ProductDetailsScreen from './app/screens/product_details';
 import UserOrderDetails from './app/UserScreens/UserOrderDetails';
 import VendorAddressMapScreen from './app/screens/VendorAddressMapScreen';
 import VendorProfileScreen from './app/screens/VendorProfileScreen';
+import LiveLocationPermission from './app/DeliveryScreens/LiveLocationPermission';
+
+// Import the LiveLocationPermission component
+
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -60,6 +63,7 @@ interface LocationData {
   postal_code?: string;
   country?: string;
 }
+
 export type RootStackParamList = {
   // --- Unauthenticated Screens ---
   Login: undefined;
@@ -67,6 +71,7 @@ export type RootStackParamList = {
   DeliveryLogin: undefined;
   AdminLogin: undefined;
   OtpScreen: { phone: string };
+  LiveLocationPermission: undefined;
 
   // --- Authenticated Main Screens (Each renders a Tab Navigator) ---
   MainUser: undefined;
@@ -102,12 +107,13 @@ export type RootStackParamList = {
   VendorHome: undefined;
   AddItemScreen: undefined;
   ProductDetails: { itemId: string };
-VendorProfile: undefined | { selectedLocation?: LocationData };
+  VendorProfile: undefined | { selectedLocation?: LocationData };
   VendorAddressMap: undefined;
 
   // --- User Order Details Screen ---
   UserOrderDetails: { order: any };
 };
+
 declare global {
   namespace ReactNavigation {
     interface RootParamList extends RootStackParamList {}
@@ -179,12 +185,15 @@ export default function App() {
               <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
               <Stack.Screen name="VendorProfile" component={VendorProfileScreen} />
               <Stack.Screen name="VendorAddressMap" component={VendorAddressMapScreen} />
-
             </>
-          ) : userRole === 'delivery' ? (
-            // --- Screen for the LOGGED IN DELIVERY partner ---
-            <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />
-          ) : (
+         // In your App.tsx, update the delivery user section:
+) : userRole === 'delivery' ? (
+  // --- Screen for the LOGGED IN DELIVERY partner ---
+  <>
+    <Stack.Screen name="LiveLocationPermission" component={LiveLocationPermission} />
+    <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />
+  </>
+) : (
             // --- Group of screens for the default LOGGED IN USER ---
             <>
               <Stack.Screen name="MainUser" component={TabNavigatorUser} />
