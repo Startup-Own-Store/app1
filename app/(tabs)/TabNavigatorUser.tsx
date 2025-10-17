@@ -148,6 +148,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // Import your user screens
 import UserHomeScreen from '../UserScreens/home';
+import HireHelpScreen from '../UserScreens/Hire_Help';
 import TrackOrderScreen from '../UserScreens/track_order';
 import ProfileScreen from '../UserScreens/profile';
 
@@ -163,6 +164,8 @@ const TabNavigatorUser = () => {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
+            } else if (route.name === 'HireHelpScreen') {
+            iconName = focused ? 'receipt' : 'receipt-outline';
           } else if (route.name === 'TrackOrder') {
             iconName = focused ? 'receipt' : 'receipt-outline';
           } else if (route.name === 'Profile') {
@@ -176,6 +179,7 @@ const TabNavigatorUser = () => {
       })}
     >
       <Tab.Screen name="Home" component={UserHomeScreen} />
+      <Tab.Screen name="HireHelpScreen" component={HireHelpScreen} options={{ title: 'Hire Person' }}/>
       <Tab.Screen name="TrackOrder" component={TrackOrderScreen} options={{ title: 'My Orders' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

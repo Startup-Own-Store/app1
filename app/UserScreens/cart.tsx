@@ -8,9 +8,12 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
+  Image,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import supabase from '../../SupabaseClient';
 import { RootStackParamList } from '../../App';
 
@@ -23,6 +26,7 @@ interface CartItem {
   total_price: number;
   items: {
     item_name: string;
+    image_url?: string;
   };
 }
 
@@ -49,10 +53,10 @@ const CartScreen = () => {
           return;
         }
 
-        // Correct Supabase query to fetch item_name from items table
+        // Correct Supabase query to fetch item_name and image_url from items table
         const { data, error } = await supabase
           .from('cart')
-          .select('cart_id, item_id, quantity, price, total_price, items!inner(item_name)') // Ensure items is returned as an object
+          .select('cart_id, item_id, quantity, price, total_price, items!inner(item_name, image_url)')
           .eq('user_id', userId);
 
         if (error) {
@@ -84,6 +88,34 @@ const CartScreen = () => {
     };
   }, []);
 
+  const updateQuantity = async (cartId: string, newQuantity: number, currentPrice: number) => {
+    if (newQuantity < 1) return;
+
+    try {
+      const { error } = await supabase
+        .from('cart')
+        .update({ 
+          quantity: newQuantity, 
+          total_price: currentPrice * newQuantity 
+        })
+        .eq('cart_id', cartId);
+
+      if (error) {
+        console.error('Error updating quantity:', error);
+      } else {
+        setCartItems(prevItems => 
+          prevItems.map(item => 
+            item.cart_id === cartId 
+              ? { ...item, quantity: newQuantity, total_price: currentPrice * newQuantity }
+              : item
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+    }
+  };
+
   const deleteCartItem = async (cartId: string) => {
     try {
       const { error } = await supabase
@@ -112,23 +144,46 @@ const CartScreen = () => {
     );
   };
 
+  const goToHome = () => {
+    navigation.navigate({ name: 'UserHomeScreen' } as any);
+  };
+
   const proceedToPayment = () => {
-    navigation.navigate('Checkout')
+    navigation.navigate('Checkout');
   };
 
   const renderItem = ({ item }: { item: CartItem }) => (
-    <View style={styles.cartItemContainer}>
-      <Text style={styles.itemName}>{item.items.item_name}</Text>
-      <Text style={styles.itemDetails}>Quantity: {item.quantity}</Text>
-      <Text style={styles.itemDetails}>Total Price: ${item.total_price.toFixed(2)}</Text>
-      <View style={styles.buttonContainer}>
-        <Text
-          style={styles.deleteButton}
-          onPress={() => confirmDelete(item.cart_id)}
-        >
-          Delete
-        </Text>
+    <View style={styles.cartItemCard}>
+      <Image
+        source={{ uri: item.items.image_url || 'https://via.placeholder.com/80x80?text=Food' }}
+        style={styles.itemImage}
+      />
+      <View style={styles.itemDetailsContainer}>
+        <Text style={styles.itemName} numberOfLines={2}>{item.items.item_name}</Text>
+        <Text style={styles.itemPrice}>₹{item.price.toFixed(2)}</Text>
+        <View style={styles.quantityContainer}>
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => updateQuantity(item.cart_id, item.quantity - 1, item.price)}
+          >
+            <MaterialIcons name="remove" size={16} color="#181113" />
+          </TouchableOpacity>
+          <Text style={styles.quantityText}>{item.quantity}</Text>
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => updateQuantity(item.cart_id, item.quantity + 1, item.price)}
+          >
+            <MaterialIcons name="add" size={16} color="#181113" />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.totalPrice}>₹{item.total_price.toFixed(2)}</Text>
       </View>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => confirmDelete(item.cart_id)}
+      >
+        <MaterialIcons name="delete" size={20} color="#ffffff" />
+      </TouchableOpacity>
     </View>
   );
 
@@ -136,30 +191,64 @@ const CartScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color="#F97316" />
           <Text style={styles.loadingText}>Loading cart...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  if (cartItems.length === 0) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={goToHome} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={24} color="#181113" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Cart</Text>
+          <View style={styles.placeholder} />
+        </View>
+        <View style={styles.emptyFullContainer}>
+          <MaterialIcons name="shopping-cart" size={64} color="#ccc" />
+          <Text style={styles.emptyTitle}>Your cart is empty</Text>
+          <Text style={styles.emptySubtitle}>Add some delicious items to get started!</Text>
+          <TouchableOpacity style={styles.addItemsButton} onPress={goToHome}>
+            <Text style={styles.addItemsButtonText}>Add Items</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const total = calculateTotalPrice();
+
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={goToHome} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={24} color="#181113" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>My Cart</Text>
+        <Text style={styles.itemCount}>{cartItems.length} items</Text>
+      </View>
       <FlatList
         data={cartItems}
         renderItem={renderItem}
         keyExtractor={item => item.cart_id}
-        contentContainerStyle={{ padding: 16 }}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Your cart is empty.</Text>
-          </View>
-        }
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
       />
-      <View style={styles.totalPriceContainer}>
-        <Text style={styles.totalPriceText}>Total Price: ${calculateTotalPrice().toFixed(2)}</Text>
-        <TouchableOpacity style={styles.proceedButton} onPress={proceedToPayment}>
-          <Text style={styles.proceedButtonText}>Proceed to Payment</Text>
+      <View style={styles.bottomBar}>
+        <View style={styles.totalSummary}>
+          <Text style={styles.totalLabel}>Total ({cartItems.length} items)</Text>
+          <Text style={styles.totalAmount}>₹{total.toFixed(2)}</Text>
+        </View>
+        <TouchableOpacity 
+          style={[styles.proceedButton, total > 0 && styles.proceedButtonActive]} 
+          onPress={proceedToPayment}
+          disabled={total === 0}
+        >
+          <Text style={styles.proceedButtonText}>Proceed to Checkout</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -171,6 +260,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#ffffff',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#181113',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  itemCount: {
+    fontSize: 16,
+    color: '#666',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  placeholder: {
+    width: 24,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -180,69 +296,162 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
-  emptyContainer: {
+  emptyFullContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 80,
   },
-  emptyText: {
-    fontSize: 16,
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#181113',
+    marginTop: 16,
+    textAlign: 'center',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  emptySubtitle: {
+    fontSize: 14,
     color: '#666',
-  },
-  cartItemContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  itemName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#181113',
-  },
-  itemDetails: {
-    fontSize: 14,
-    color: '#555',
-    marginTop: 4,
-  },
-  totalPriceContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    backgroundColor: '#f9f9f9',
-  },
-  totalPriceText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#181113',
-    textAlign: 'center',
-  },
-  buttonContainer: {
     marginTop: 8,
-    alignItems: 'flex-end',
-  },
-  deleteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#ff4d4d',
-    color: '#ffffff',
-    borderRadius: 4,
-    fontSize: 14,
-    fontWeight: 'bold',
     textAlign: 'center',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  addItemsButton: {
+    marginTop: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#F97316',
+    borderRadius: 12,
+  },
+  addItemsButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  cartItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    elevation: Platform.OS === 'android' ? 4 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0,
+    shadowRadius: 8,
     overflow: 'hidden',
   },
-  proceedButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ec8627',
-    borderRadius: 8,
+  itemImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    marginRight: 16,
+  },
+  itemDetailsContainer: {
+    flex: 1,
+  },
+  itemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#181113',
+    marginBottom: 4,
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  itemPrice: {
+    fontSize: 14,
+    color: '#22c55e',
+    fontWeight: 'bold',
+    marginBottom: 8,
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  quantityContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
+  },
+  quantityButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  quantityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#181113',
+    minWidth: 20,
+    textAlign: 'center',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  totalPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#181113',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  deleteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ff4d4d',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    elevation: Platform.OS === 'android' ? 8 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0,
+    shadowRadius: 4,
+  },
+  totalSummary: {
+    flex: 1,
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  totalAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#181113',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  proceedButton: {
+    paddingVertical: 16,
+    backgroundColor: '#ec8627',
+    borderRadius: 12,
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 12,
+  },
+  proceedButtonActive: {
+    backgroundColor: '#F97316',
   },
   proceedButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
 });
 

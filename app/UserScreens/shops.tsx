@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -56,8 +56,18 @@ const RestaurantMenuScreen = ({ navigation, route, onNavigateToCheckout }: Resta
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [filteredItems, setFilteredItems] = useState<MenuItem[]>([]);
+  const [cartQuantities, setCartQuantities] = useState<{ [key: string]: number }>({});
 
   const { shopId, shopName } = route.params || {};
+
+  const totalItems = useMemo(() => Object.values(cartQuantities).reduce((sum, qty) => sum + qty, 0), [cartQuantities]);
+
+  const totalPrice = useMemo(() => 
+    Object.entries(cartQuantities).reduce((sum, [id, qty]) => {
+      const item = menuItems.find(i => i.id === id);
+      return sum + (item ? item.price * qty : 0);
+    }, 0), [cartQuantities, menuItems]
+  );
 
   // Fetch vendor details and menu items
   useEffect(() => {
@@ -122,54 +132,90 @@ const RestaurantMenuScreen = ({ navigation, route, onNavigateToCheckout }: Resta
     }
   };
 
-const handleFoodItemPress = (food: MenuItem) => {
-    navigation.navigate('ProductDetail', { 
-      food: {
-        id: food.id,
-        name: food.item_name,
-        description: food.description,
-        price: food.price,
-        image: food.image_url || 'https://via.placeholder.com/300x200?text=Food'
+  const addToCart = (item: MenuItem) => {
+    setCartQuantities(prev => ({
+      ...prev,
+      [item.id]: (prev[item.id] || 0) + 1
+    }));
+  };
+
+  const removeFromCart = (item: MenuItem) => {
+    setCartQuantities(prev => {
+      const newQty = (prev[item.id] || 0) - 1;
+      if (newQty <= 0) {
+        const { [item.id]: _, ...rest } = prev;
+        return rest;
       }
+      return { ...prev, [item.id]: newQty };
     });
   };
 
-  const renderMenuItem = ({ item }: { item: MenuItem }) => (
-    <TouchableOpacity 
-      style={styles.menuItemContainer} 
-      onPress={() => handleFoodItemPress(item)}
-      disabled={!item.available}
-    >
-      <View style={styles.menuItemTextContainer}>
-        <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
-        <Text style={styles.itemDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-        {item.vegetarian && <Text style={styles.dietTag}>Vegetarian</Text>}
-        {item.vegan && <Text style={styles.dietTag}>Vegan</Text>}
-        {item.gluten_free && <Text style={styles.dietTag}>Gluten-Free</Text>}
-        <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-        {!item.available && (
-          <Text style={styles.unavailableText}>Currently unavailable</Text>
-        )}
+  const renderMenuItem = ({ item }: { item: MenuItem }) => {
+    const quantity = cartQuantities[item.id] || 0;
+    return (
+      <View style={styles.menuItemCard}>
+        <View style={styles.menuItemContainer}>
+          <View style={styles.menuItemTextContainer}>
+            <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+            <Text style={styles.itemDescription} numberOfLines={2}>
+              {item.description}
+            </Text>
+            <View style={styles.dietTagsContainer}>
+              {item.vegetarian && <Text style={styles.dietTag}>Veg</Text>}
+              {item.vegan && <Text style={styles.dietTag}>Vgn</Text>}
+              {item.gluten_free && <Text style={styles.dietTag}>GF</Text>}
+            </View>
+            <Text style={styles.itemPrice}>₹{item.price.toFixed(2)}</Text>
+            {!item.available && (
+              <Text style={styles.unavailableText}>Currently unavailable</Text>
+            )}
+            {item.available && (
+              quantity === 0 ? (
+                <TouchableOpacity 
+                  style={styles.addButton} 
+                  onPress={() => addToCart(item)}
+                >
+                  <Text style={styles.addButtonText}>ADD</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.quantityContainer}>
+                  <TouchableOpacity 
+                    style={styles.quantityMinus} 
+                    onPress={() => removeFromCart(item)}
+                  >
+                    <MaterialIcons name="remove" size={16} color="#181113" />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity 
+                    style={styles.quantityPlus} 
+                    onPress={() => addToCart(item)}
+                  >
+                    <MaterialIcons name="add" size={16} color="#181113" />
+                  </TouchableOpacity>
+                </View>
+              )
+            )}
+          </View>
+          <Image 
+            source={{ uri: item.image_url || 'https://via.placeholder.com/100x100?text=Food' }} 
+            style={[styles.itemImage, !item.available && styles.unavailableImage]} 
+          />
+        </View>
       </View>
-      <Image 
-        source={{ uri: item.image_url || 'https://via.placeholder.com/100x100?text=Food' }} 
-        style={[styles.itemImage, !item.available && styles.unavailableImage]} 
-      />
-    </TouchableOpacity>
-  );
+    );
+  };
 
   const ListHeader = () => (
     <>
       <ImageBackground 
         source={{ uri: vendor?.image || 'https://via.placeholder.com/400x200?text=Restaurant' }}
         style={styles.shopHeaderImage}
+        imageStyle={{ borderRadius: 16 }}
       >
         <View style={styles.headerGradientOverlay} />
       </ImageBackground>
       <View style={styles.shopInfoContainer}>
-        <Text style={styles.shopName}>{vendor?.name || shopName || 'Restaurant'}</Text>
+        <Text style={styles.shopName}>{vendor?.name || shopName || 'Italian Delights'}</Text>
         <View style={styles.shopInfoRow}>
           <MaterialIcons name="star" size={16} color="#ffb400" />
           <Text style={styles.shopInfoText}>{vendor?.rating || '4.8'} (200+ ratings)</Text>
@@ -178,7 +224,7 @@ const handleFoodItemPress = (food: MenuItem) => {
           <Text style={styles.shopInfoText}>·</Text>
           <Text style={styles.shopInfoText}>$$</Text>
         </View>
-        <Text style={styles.shopDeliveryInfo}>{vendor?.time || '20-30 min'} · $3.99 delivery</Text>
+        <Text style={styles.shopDeliveryInfo}>{vendor?.time || '20-30 min'} · ₹3.99 delivery</Text>
       </View>
       <View style={styles.tabContainer}>
         <FlatList
@@ -227,21 +273,25 @@ const handleFoodItemPress = (food: MenuItem) => {
           <TouchableOpacity onPress={onBack}>
             <MaterialIcons name="arrow-back" size={24} color="#181113" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{vendor?.name || shopName || 'Restaurant'}</Text>
+          <Text style={styles.headerTitle}>{vendor?.name || shopName || 'Italian Delights'}</Text>
           {/* Update TouchableOpacity for shopping-cart */}
-          <TouchableOpacity onPress={onNavigateToCart}>
-            <MaterialIcons name="shopping-cart" size={24} color="#181113" />
+          <TouchableOpacity onPress={onNavigateToCart} style={[styles.cartButton, { position: 'relative' }]}>
+            <MaterialIcons name="shopping-cart" size={24} color="#ffffff" />
+            {totalItems > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{totalItems > 99 ? '99+' : totalItems}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
         <FlatList
           data={filteredItems}
           renderItem={renderMenuItem}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           ListHeaderComponent={ListHeader}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          contentContainerStyle={{ paddingBottom: 16 }}
+          contentContainerStyle={{ paddingBottom: totalItems > 0 ? 100 : 16 }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <MaterialIcons name="restaurant-menu" size={64} color="#ccc" />
@@ -251,6 +301,18 @@ const handleFoodItemPress = (food: MenuItem) => {
             </View>
           }
         />
+
+        {totalItems > 0 && (
+          <View style={styles.bottomBar}>
+            <View>
+              <Text style={styles.bottomText}>{totalItems} items</Text>
+              <Text style={styles.bottomPrice}>₹{totalPrice.toFixed(2)}</Text>
+            </View>
+            <TouchableOpacity style={styles.checkoutButton} onPress={onNavigateToCart}>
+              <Text style={styles.checkoutText}>Checkout</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -273,6 +335,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   headerTitle: {
     fontSize: 18,
@@ -280,10 +348,44 @@ const styles = StyleSheet.create({
     color: '#181113',
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
+  cartButton: {
+      backgroundColor: '#F97316', // Vibrant orange
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+  },
+  cartBadge: {
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    backgroundColor: '#000',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  cartBadgeText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: 'bold',
+  },
   // Shop Header
   shopHeaderImage: {
       height: 180,
       justifyContent: 'flex-end',
+      margin: 16,
+      borderRadius: 16,
+      overflow: 'hidden',
   },
   headerGradientOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -302,7 +404,7 @@ const styles = StyleSheet.create({
   shopInfoRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 4,
       marginTop: 8,
   },
   shopInfoText: {
@@ -336,6 +438,18 @@ const styles = StyleSheet.create({
     borderBottomColor: '#181113',
   },
   // Menu List Item
+  menuItemCard: {
+    marginHorizontal: 16,
+    marginVertical: 4,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    elevation: Platform.OS === 'android' ? 2 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0,
+    shadowRadius: 2,
+    overflow: 'hidden',
+  },
   menuItemContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -359,9 +473,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
+  dietTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    marginBottom: 4,
+  },
   itemPrice: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#181113',
     marginTop: 8,
     fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -371,11 +491,95 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
   },
-  separator: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
-    marginHorizontal: 16,
+  addButton: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#22c55e',
+    alignSelf: 'flex-start',
   },
+  addButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  quantityMinus: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  quantityPlus: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#22c55e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  quantityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#181113',
+    minWidth: 20,
+    textAlign: 'center',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  // Bottom Bar
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    elevation: Platform.OS === 'android' ? 8 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0,
+    shadowRadius: 4,
+  },
+  bottomText: {
+    fontSize: 14,
+    color: '#666',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  bottomPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#181113',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  checkoutButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#22c55e',
+  },
+  checkoutText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  // Other styles
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -386,8 +590,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
-  // NEW STYLES ADDED BELOW
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -400,17 +604,16 @@ const styles = StyleSheet.create({
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
   dietTag: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
     backgroundColor: '#f0f0f0',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 12,
     marginRight: 8,
-    marginTop: 8,
     marginBottom: 4,
-    alignSelf: 'flex-start',
     fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontWeight: '500',
   },
   unavailableText: {
     fontSize: 12,
