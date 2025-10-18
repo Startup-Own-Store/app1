@@ -14,6 +14,8 @@ import {
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import auth, { PhoneAuthProvider } from '@react-native-firebase/auth';
+import Home from '../UserScreens/home';
+import { syncFirebaseUserToSupabase } from '../utils/firebaseSupabaseSync';
 
 // Define the RootStackParamList to match your App.tsx
 type RootStackParamList = {
@@ -85,10 +87,6 @@ const OTPScreen = () => {
     if (enteredOtp.length !== 6) {
       return Alert.alert('Error', 'Please enter the complete 6-digit code.');
     }
-
-    if (!currentVerificationId) {
-      return Alert.alert('Error', 'Verification ID is missing. Please resend the code.');
-    }
     
     setLoading(true);
     try {
@@ -100,9 +98,19 @@ const OTPScreen = () => {
       
       console.log('User signed in successfully:', userCredential.user);
       
+      // ✅ Sync Firebase user to Supabase
+      console.log('Syncing user to Supabase...');
+      const { success, error: syncError } = await syncFirebaseUserToSupabase('user');
+      
+      if (!success) {
+        console.warn('Failed to sync user to Supabase:', syncError);
+        // Don't block the user - they can still proceed
+      } else {
+        console.log('User successfully synced to Supabase');
+      }
+      
       // Success - navigation will be handled by your auth state listener in App.tsx
       Alert.alert('Success', 'Phone number verified successfully!');
-      
     } catch (error: any) {
       console.error('OTP Verification Error:', error);
       

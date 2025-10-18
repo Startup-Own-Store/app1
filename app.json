@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "main",
+    "name": "OwnStore",
     "displayName": "OwnStore",
     "slug": "ownstore",
     "scheme": "ownstore",
@@ -27,7 +27,6 @@
     },
     "plugins": [
       "expo-web-browser",
-      "expo-dev-client",
       [
         "expo-location",
         {

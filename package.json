@@ -4,6 +4,8 @@
   "main": "index.tsx",
   "scripts": {
     "start": "node server.js & npx expo start --go -c",
+    "server": "node server.js",
+    "test-server": "node test-server.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build:android": "cd android && ./gradlew assembleRelease",
@@ -11,7 +13,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/cli-platform-android": "^20.0.0",
     "@react-native-community/geolocation": "^3.4.0",
     "@react-native-firebase/app": "^23.4.0",
@@ -21,17 +23,19 @@
     "@react-navigation/bottom-tabs": "^7.4.4",
     "@react-navigation/core": "^7.12.3",
     "@react-navigation/native": "^7.1.16",
-    "@react-navigation/native-stack": "^7.3.23",
+    "@react-navigation/native-stack": "^7.3.28",
     "@react-navigation/stack": "^7.4.9",
-    "@supabase/supabase-js": "^2.55.0",
+    "@supabase/supabase-js": "^2.75.0",
     "axios": "^1.11.0",
     "body-parser": "^2.2.0",
     "buffer": "^6.0.3",
+    "dotenv": "^17.2.3",
     "expo": "^53.0.22",
     "expo-auth-session": "~6.2.1",
-    "expo-constants": "^18.0.9",
+    "expo-constants": "~17.1.7",
     "expo-crypto": "~14.1.5",
     "expo-dev-client": "~5.2.4",
+    "expo-file-system": "~18.1.11",
     "expo-image-picker": "^16.1.4",
     "expo-location": "~18.1.6",
     "expo-web-browser": "~14.2.0",
@@ -49,7 +53,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-vector-icons": "^10.3.0",
-    "supabase": "^2.34.3"
+    "supabase": "^2.34.3",
+    "node-fetch": "^2.7.0"
   },
   "expo": {
     "doctor": {
@@ -68,6 +73,7 @@
     "@types/react": "~19.0.10",
     "@types/react-native-razorpay": "^2.2.6",
     "@types/react-native-vector-icons": "^6.4.18",
+    "@types/react-navigation": "^3.0.8",
     "typescript": "~5.8.3"
   },
   "resolutions": {
