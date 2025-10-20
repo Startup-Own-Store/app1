@@ -4,15 +4,16 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Image,
   FlatList,
   Platform,
   StatusBar,
   ImageBackground,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import supabase from '../../SupabaseClient'; // Import your Supabase client
 
 // Define types
@@ -51,6 +52,11 @@ interface RestaurantMenuScreenProps {
 const menuTabs = ['Popular', 'Appetizers', 'Main Courses', 'Desserts', 'Drinks'];
 
 const RestaurantMenuScreen = ({ navigation, route, onNavigateToCheckout }: RestaurantMenuScreenProps) => {
+  // Responsive helpers
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const headerHeight = Math.round(Math.min(240, Math.max(160, width * 0.42)));
+  const itemImageSize = Math.round(Math.min(120, Math.max(84, width * 0.26)));
   const [activeTab, setActiveTab] = useState('Popular');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
@@ -210,7 +216,7 @@ const handleFoodItemPress = (food: MenuItem) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+  <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
           <Text style={styles.loadingText}>Loading menu...</Text>
@@ -220,28 +226,102 @@ const handleFoodItemPress = (food: MenuItem) => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+  <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack}>
-            <MaterialIcons name="arrow-back" size={24} color="#181113" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{vendor?.name || shopName || 'Restaurant'}</Text>
-          {/* Update TouchableOpacity for shopping-cart */}
-          <TouchableOpacity onPress={onNavigateToCart}>
-            <MaterialIcons name="shopping-cart" size={24} color="#181113" />
-          </TouchableOpacity>
+          <View style={styles.headerSide}>
+            <TouchableOpacity onPress={onBack} accessibilityLabel="Go back">
+              <MaterialIcons name="arrow-back" size={24} color="#181113" />
+            </TouchableOpacity>
+          </View>
+          <Text
+            style={styles.headerTitle}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.9}
+          >
+            {vendor?.name || shopName || 'Restaurant'}
+          </Text>
+          <View style={styles.headerSide}>
+            {/* Update TouchableOpacity for shopping-cart */}
+            <TouchableOpacity onPress={onNavigateToCart} accessibilityLabel="Open cart">
+              <MaterialIcons name="shopping-cart" size={24} color="#181113" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <FlatList
           data={filteredItems}
-          renderItem={renderMenuItem}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              style={styles.menuItemContainer} 
+              onPress={() => handleFoodItemPress(item)}
+              disabled={!item.available}
+            >
+              <View style={styles.menuItemTextContainer}>
+                <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+                <Text style={styles.itemDescription} numberOfLines={2}>
+                  {item.description}
+                </Text>
+                {item.vegetarian && <Text style={styles.dietTag}>Vegetarian</Text>}
+                {item.vegan && <Text style={styles.dietTag}>Vegan</Text>}
+                {item.gluten_free && <Text style={styles.dietTag}>Gluten-Free</Text>}
+                <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+                {!item.available && (
+                  <Text style={styles.unavailableText}>Currently unavailable</Text>
+                )}
+              </View>
+              <Image 
+                source={{ uri: item.image_url || 'https://via.placeholder.com/100x100?text=Food' }} 
+                style={[styles.itemImage, { width: itemImageSize, height: itemImageSize }, !item.available && styles.unavailableImage]} 
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          )}
           keyExtractor={item => item.id}
-          ListHeaderComponent={ListHeader}
+          ListHeaderComponent={() => (
+            <>
+              <ImageBackground 
+                source={{ uri: vendor?.image || 'https://via.placeholder.com/400x200?text=Restaurant' }}
+                style={[styles.shopHeaderImage, { height: headerHeight }]}
+                resizeMode="cover"
+              >
+                <View style={styles.headerGradientOverlay} />
+              </ImageBackground>
+              <View style={styles.shopInfoContainer}>
+                <Text style={styles.shopName}>{vendor?.name || shopName || 'Restaurant'}</Text>
+                <View style={styles.shopInfoRow}>
+                  <MaterialIcons name="star" size={16} color="#ffb400" />
+                  <Text style={styles.shopInfoText}>{vendor?.rating || '4.8'} (200+ ratings)</Text>
+                  <Text style={styles.shopInfoText}>·</Text>
+                  <Text style={styles.shopInfoText}>Italian</Text>
+                  <Text style={styles.shopInfoText}>·</Text>
+                  <Text style={styles.shopInfoText}>$$</Text>
+                </View>
+                <Text style={styles.shopDeliveryInfo}>{vendor?.time || '20-30 min'} · $3.99 delivery</Text>
+              </View>
+              <View style={styles.tabContainer}>
+                <FlatList
+                  horizontal
+                  data={menuTabs}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity onPress={() => setActiveTab(item)}>
+                      <Text style={[styles.tabText, activeTab === item && styles.activeTabText]}>
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={item => item}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                />
+              </View>
+            </>
+          )}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
-          contentContainerStyle={{ paddingBottom: 16 }}
+          contentContainerStyle={{ paddingBottom: Math.max(16, insets.bottom + (Platform.OS === 'android' ? 16 : 8)) }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <MaterialIcons name="restaurant-menu" size={64} color="#ccc" />
@@ -261,7 +341,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
@@ -275,15 +354,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: {
+    flexShrink: 1,
+    flexGrow: 1,
+    textAlign: 'center',
+    marginHorizontal: 8,
     fontSize: 18,
     fontWeight: '700',
     color: '#181113',
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
+  headerSide: {
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // Shop Header
   shopHeaderImage: {
-      height: 180,
-      justifyContent: 'flex-end',
+    width: '100%',
+    justifyContent: 'flex-end',
   },
   headerGradientOverlay: {
       ...StyleSheet.absoluteFillObject,

@@ -13,13 +13,13 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import supabase from '../../SupabaseClient';// Adjust the import based on your project structure
-import FirebaseClient from '../../FirebaseClient'; // Adjust the import based on your project structure
+
 const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackOrder?: () => void }) => {
   const [userName, setUserName] = React.useState('');
   const [userPhone, setUserPhone] = React.useState('');
 
   const handleLogout = async () => {
-    const { error } = await FirebaseClient.signOut();
+    const { error } = await supabase.auth.signOut();
     if (error) {
       Alert.alert('Logout Error', error.message);
     }
@@ -40,11 +40,15 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
   React.useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const user = FirebaseClient.getCurrentUser();
-        if (user) {
-          setUserName(user.displayName || '');
-          setUserPhone(user.phoneNumber || '');
+        const { data, error } = await supabase.auth.getUser();
+
+        if (error) {
+          console.error('Error fetching user details:', error);
+          return;
         }
+
+        setUserName(data.user?.user_metadata?.display_name || '');
+        setUserPhone(data.user?.phone || '');
       } catch (err) {
         console.error('Unexpected error:', err);
       }

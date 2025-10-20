@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.tsx",
   "scripts": {
-    "start": "node server.js & npx expo start --go -c",
+    "start": "node server.js; npx expo start --dev-client -c",
+    "start:go": "npx expo start --go -c",
     "server": "node server.js",
     "test-server": "node test-server.js",
     "android": "expo run:android",
