@@ -30,6 +30,7 @@
     "buffer": "^6.0.3",
     "dotenv": "^17.2.3",
     "expo": "^53.0.22",
+    "expo-asset": "^12.0.9",
     "expo-auth-session": "~6.2.1",
     "expo-constants": "~17.1.7",
     "expo-crypto": "~14.1.5",
@@ -39,6 +40,9 @@
     "expo-location": "~18.1.6",
     "expo-web-browser": "~14.2.0",
     "express": "^5.1.0",
+    "firebase-admin": "^13.5.0",
+    "firebase-functions": "^6.5.0",
+    "node-fetch": "^2.7.0",
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-app-auth": "^8.0.3",
@@ -51,8 +55,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-vector-icons": "^10.3.0",
-    "supabase": "^2.34.3",
-    "node-fetch": "^2.7.0"
+    "supabase": "^2.34.3"
   },
   "expo": {
     "doctor": {
@@ -68,6 +71,7 @@
     "@babel/core": "^7.25.2",
     "@expo/config-plugins": "~10.1.1",
     "@react-native-community/cli": "^19.1.1",
+    "@types/node": "^24.8.1",
     "@types/react": "~19.0.10",
     "@types/react-native-razorpay": "^2.2.6",
     "@types/react-native-vector-icons": "^6.4.18",
