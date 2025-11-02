@@ -1,4 +1,4 @@
- import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,78 +9,56 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import supabase from '../../SupabaseClient';
 import { useNavigation } from '@react-navigation/native';
+import auth from '@react-native-firebase/auth';
+import { syncFirebaseUserToSupabase } from '../utils/firebaseSupabaseSync';
 
 const NameInputScreen: React.FC = () => {
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-  const [checking, setChecking] = useState(true);
 
-  // Only show this screen if display_name is empty
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const { data, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error('Error fetching user:', error);
-        }
-        const displayName = data?.user?.user_metadata?.display_name;
-        if (displayName && String(displayName).trim().length > 0) {
-          // User already has a display name; skip this screen
-          navigation.navigate('MainUser' as never);
-          return;
-        }
-      } catch (err) {
-        console.error('Unexpected error while checking display name:', err);
-      } finally {
-        if (isMounted) setChecking(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [navigation]);
-
-  // Update the `Display name` column using Supabase Authentication API
+  // Update the display name in Firebase and sync to Supabase
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter your name.');
-      return;
+      return Alert.alert('Error', 'Please enter your name.');
     }
 
-    
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { display_name: name },
-      });
-
-      if (error) {
-        console.error('Error updating name:', error);
-        Alert.alert('Error', 'Failed to save name.');
-        return;
+      const firebaseUser = auth().currentUser;
+      if (!firebaseUser) {
+        throw new Error('No authenticated user found');
       }
 
-      Alert.alert('Success', 'Name saved successfully!');
-      navigation.navigate('MainUser' as never);
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      Alert.alert('Error', 'An unexpected error occurred.');
+      // Update Firebase user profile
+      await firebaseUser.updateProfile({
+        displayName: name.trim(),
+      });
+
+      console.log('Display name updated in Firebase');
+
+      // ✅ Sync updated user data to Supabase
+      const { success, error: syncError } = await syncFirebaseUserToSupabase('user');
+
+      if (!success) {
+        console.warn('Failed to sync to Supabase:', syncError);
+        // Don't block the user - they can still proceed
+      } else {
+        console.log('User profile synced to Supabase successfully');
+      }
+
+      Alert.alert('Success', 'Profile updated successfully!');
+      // Navigation will be handled by App.tsx auth state change
+    } catch (error) {
+      console.error('Error updating name:', error);
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
-
-  if (checking) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <ActivityIndicator size="large" color="#ec8627" />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
