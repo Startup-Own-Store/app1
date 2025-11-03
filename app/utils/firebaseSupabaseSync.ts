@@ -6,7 +6,7 @@ const getApiUrl = () => {
   if (__DEV__) {
     // Development mode - use your computer's IP address
     // This works for both Android emulator and physical devices
-    return 'http://10.137.159.143:3000';
+    return 'http://10.40.39.26:3000';
   }
   // Production URL
   return 'https://ownstore-api.onrender.com';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,28 +11,57 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient';
 
 const DeliveryLoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
 
-  // ✅ Supabase Email/Password sign-in function
+  // Check if user is already logged in
+  useEffect(() => {
+    checkAuthState();
+  }, []);
+
+  const checkAuthState = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      // User is already logged in, navigate directly to location permission
+      navigation.navigate('LiveLocationPermission' as never);
+    }
+  };
+
   const handleEmailSignIn = async () => {
     if (!email || !password) {
       return Alert.alert("Error", "Please enter both email and password.");
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
+    setLoading(true);
 
-    if (error) {
-      Alert.alert("Sign In Error", error.message);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        Alert.alert("Sign In Error", error.message);
+      } else {
+        // Successfully logged in, navigate to location permission screen
+        navigation.navigate('LiveLocationPermission' as never);
+      }
+    } catch (err: any) {
+      Alert.alert("An Unexpected Error Occurred", err.message);
+    } finally {
+      setLoading(false);
     }
-    // If successful, the onAuthStateChange listener in your main App.tsx
-    // will handle navigation to the correct part of the app.
+  };
+
+  const handleBack = () => {
+    navigation.goBack();
   };
 
   return (
@@ -42,6 +71,13 @@ const DeliveryLoginScreen = () => {
         style={styles.keyboardAvoidingContainer}
       >
         <View style={styles.container}>
+          {/* App Bar with Back Button */}
+          <View style={styles.appBar}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#181411" />
+            </TouchableOpacity>
+          </View>
+
           {/* Header Section */}
           <View style={styles.header}>
             <Text style={styles.title}>Delivery Login</Text>
@@ -71,12 +107,18 @@ const DeliveryLoginScreen = () => {
                 secureTextEntry
               />
             </View>
-            <TouchableOpacity style={styles.continueButton} onPress={handleEmailSignIn}>
-              <Text style={styles.continueButtonText}>Sign In</Text>
+            <TouchableOpacity 
+              style={[styles.continueButton, { opacity: loading ? 0.7 : 1 }]} 
+              onPress={handleEmailSignIn}
+              disabled={loading}
+            >
+              <Text style={styles.continueButtonText}>
+                {loading ? 'Signing In...' : 'Sign In'}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Footer Spacer - keeps the form centered */}
+          {/* Footer Spacer */}
           <View style={styles.footer} />
         </View>
       </KeyboardAvoidingView>
@@ -84,7 +126,6 @@ const DeliveryLoginScreen = () => {
   );
 };
 
-// --- Styles (Consistent with your theme) ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -99,9 +140,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 24,
   },
+  appBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  backButton: {
+    padding: 8,
+  },
+  appBarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#181411',
+  },
+  placeholder: {
+    width: 40,
+  },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 40,
   },
   title: {
@@ -143,8 +202,6 @@ const styles = StyleSheet.create({
     color: '#181411',
   },
   footer: {
-    // This is an empty view to push the content up,
-    // creating a balanced layout.
     height: 100,
   },
 });

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "1054963152708-ffslo7m6nbpfcdr3rnqttd0cdboa0in4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ajay.ownstoredemo",
+            "certificate_hash": "576cfd369eb61060363371a71cff57033f0d0fdf"
+          }
+        },
+        {
           "client_id": "1054963152708-sj0h84njoha7ov95jr8qdmtrhpkitl8q.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

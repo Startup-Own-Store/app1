@@ -7,11 +7,18 @@
     "owner": "ajay252",
     "android": {
       "package": "com.ajay.ownstoredemo",
-      "googleServicesFile": "google-services.json",
+      "googleServicesFile": "android/app/google-services.json",
       "versionCode": 1,
-      "compileSdkVersion": 33,
-      "targetSdkVersion": 33,
-      "minSdkVersion": 21
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyClZ3TXRsXBWRcaZp_kcw5LaxJNK9LM83Q"
+        }
+      }
+    },
+    "ios": {
+      "config": {
+        "googleMapsApiKey": "AIzaSyClZ3TXRsXBWRcaZp_kcw5LaxJNK9LM83Q"
+      }
     },
     "extra": {
       "eas": {
@@ -20,7 +27,12 @@
     },
     "plugins": [
       "expo-web-browser",
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUseUsageDescription": "Allow OwnStore to use your location."
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth"
     ]

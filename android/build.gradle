@@ -32,6 +32,17 @@ allprojects {
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
   }
+    
+    // Add version resolution strategy to fix the FusedLocationProviderClient error
+    configurations.all {
+    resolutionStrategy {
+        force "com.google.android.gms:play-services-location:21.3.0"
+        force "com.google.android.gms:play-services-maps:19.0.0"
+        force "com.google.android.gms:play-services-base:18.5.0"
+        force "com.google.android.gms:play-services-tasks:18.2.0"
+        force "com.google.android.gms:play-services-basement:18.3.0"
+    }
+}
 }
 
 apply plugin: "expo-root-project"
