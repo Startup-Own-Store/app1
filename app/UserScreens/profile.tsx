@@ -19,9 +19,17 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
   const [userPhone, setUserPhone] = React.useState('');
 
   const handleLogout = async () => {
-    const { error } = await FirebaseClient.signOut();
-    if (error) {
-      Alert.alert('Logout Error', error.message);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        Alert.alert('Logout Error', error.message);
+      } else {
+        Alert.alert('Success', 'Logged out successfully');
+        // You might want to navigate to login screen here
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
     }
   };
 
@@ -36,14 +44,19 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
     { id: '8', title: 'Logout', icon: 'logout', onPress: handleLogout },
   ];
 
-  // Fetch the `Display name` and phone number using Supabase Authentication API
+  // Fetch the user details using Supabase Authentication API
   React.useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const user = FirebaseClient.getCurrentUser();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Error fetching user:', error);
+          return;
+        }
         if (user) {
-          setUserName(user.displayName || '');
-          setUserPhone(user.phoneNumber || '');
+          // Get user metadata or phone from user object
+          setUserName(user.user_metadata?.full_name || user.user_metadata?.name || 'User');
+          setUserPhone(user.phone || user.user_metadata?.phone || '');
         }
       } catch (err) {
         console.error('Unexpected error:', err);

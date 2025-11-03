@@ -4,6 +4,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { Session } from '@supabase/supabase-js';
 
 import supabase from './SupabaseClient';
 import { MenuProvider } from './app/screens/MenuContext';
@@ -16,6 +17,8 @@ import TabNavigatorDelivery from './app/(tabs)/TabNavigatorDelivery';
 // Import all Authentication screens for logged-out users
 import LoginScreen from './app/UserScreens/Login';
 import OtpScreen from './app/UserScreens/OtpScreen';
+import LoginEmailScreen from './app/UserScreens/LoginEmail';
+import SignupEmailScreen from './app/UserScreens/SignupEmail';
 import VendorLoginScreen from './app/screens/VendorLogin';
 import DeliveryLoginScreen from './app/DeliveryScreens/DeliveryLogin';
 import AdminLoginScreen from './app/Admin/AdminLogin';
@@ -25,6 +28,7 @@ import AdminDashboardScreen from './app/Admin/AdminDashboard';
 import CreateVendorUserScreen from './app/Admin/CreateVendorUser';
 import CreateDeliveryUserScreen from './app/Admin/CreateDeliveryUser';
 import AdminOrderDetailsScreen from './app/Admin/AdminOrderDetails';
+import AdminHireRequestsScreen from './app/Admin/AdminHireRequests';
 
 // Import all UserScreens for direct navigation
 import CheckoutScreen from './app/UserScreens/checkout';
@@ -49,7 +53,6 @@ import LiveLocationPermission from './app/DeliveryScreens/LiveLocationPermission
 
 // Import the LiveLocationPermission component
 
-
 /**
  * This is the single source of truth for all navigation routes in the app.
  */
@@ -66,6 +69,8 @@ interface LocationData {
 export type RootStackParamList = {
   // --- Unauthenticated Screens ---
   Login: undefined;
+  LoginEmail: undefined;
+  SignupEmail: undefined;
   VendorLogin: undefined;
   DeliveryLogin: undefined;
   AdminLogin: undefined;
@@ -82,6 +87,7 @@ export type RootStackParamList = {
   CreateVendorUser: undefined;
   CreateDeliveryUser: undefined;
   AdminOrderDetails: undefined;
+  AdminHireRequests: undefined;
 
   // --- Other User-Specific Screens ---
   Checkout: undefined;
@@ -123,10 +129,41 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Listen to Supabase auth state changes
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSupabaseSession(session);
+      if (session?.user) {
+        // User is signed in with Supabase email auth
+        // Fetch their role from the database
+        await fetchSupabaseUserRole(session.user.id);
+        setLoading(false);
+      } else {
+        // Check Firebase auth if no Supabase session
+        checkFirebaseAuth();
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('Supabase auth state changed:', session?.user?.id);
+      setSupabaseSession(session);
+      if (session?.user) {
+        await fetchSupabaseUserRole(session.user.id);
+      } else if (!firebaseUser) {
+        setUserRole(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkFirebaseAuth = () => {
     // Listen to Firebase auth state changes
     const unsubscribe = auth().onAuthStateChanged(async (user) => {
       console.log('Firebase auth state changed:', user?.uid);
@@ -145,7 +182,53 @@ export default function App() {
     });
 
     return unsubscribe;
-  }, []);
+  };
+
+  /**
+   * Fetches user role from Supabase database using Supabase User ID
+   */
+  const fetchSupabaseUserRole = async (supabaseUserId: string) => {
+    try {
+      console.log('Fetching user role for Supabase User ID:', supabaseUserId);
+
+      // First, check if user has a role in user_metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.role) {
+        console.log('User role from metadata:', user.user_metadata.role);
+        setUserRole(user.user_metadata.role);
+        return;
+      }
+
+      // If not in metadata, check the users table or a custom table
+      const { data, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', supabaseUserId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('User not found in users table, defaulting to user role');
+          setUserRole('user');
+          return;
+        }
+        console.error('Error fetching user role:', error);
+        setUserRole('user');
+        return;
+      }
+
+      if (data) {
+        console.log('User role fetched from table:', data.role);
+        setUserRole(data.role || 'user');
+      } else {
+        console.log('No user data found, defaulting to user role');
+        setUserRole('user');
+      }
+    } catch (error) {
+      console.error('Exception while fetching user role:', error);
+      setUserRole('user');
+    }
+  };
 
   /**
    * Fetches user role from Supabase database using Firebase UID
@@ -193,13 +276,17 @@ export default function App() {
     );
   }
 
+  const isAuthenticated = firebaseUser || supabaseSession;
+
   return (
     <MenuProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!firebaseUser ? (
+          {!isAuthenticated ? (
             // --- Group of screens to show when the user is LOGGED OUT ---
             <>
+              <Stack.Screen name="LoginEmail" component={LoginEmailScreen} />
+              <Stack.Screen name="SignupEmail" component={SignupEmailScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="OtpScreen" component={OtpScreen} />
               <Stack.Screen name="VendorLogin" component={VendorLoginScreen} />
@@ -213,6 +300,7 @@ export default function App() {
               <Stack.Screen name="CreateVendorUser" component={CreateVendorUserScreen} />
               <Stack.Screen name="CreateDeliveryUser" component={CreateDeliveryUserScreen} />
               <Stack.Screen name="AdminOrderDetails" component={AdminOrderDetailsScreen} />
+              <Stack.Screen name="AdminHireRequests" component={AdminHireRequestsScreen} />
             </>
           ) : userRole === 'vendor' ? (
             // --- Screens for the LOGGED IN VENDOR ---

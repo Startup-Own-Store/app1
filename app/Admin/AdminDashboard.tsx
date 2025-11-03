@@ -13,9 +13,16 @@ const AdminDashboard = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const handleLogout = async () => {
-    const { error } = await FirebaseClient.signOut();
-    if (error) {
-      Alert.alert('Logout Error', error.message);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        Alert.alert('Logout Error', error.message);
+      } else {
+        Alert.alert('Success', 'Logged out successfully');
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+      Alert.alert('Error', 'Failed to logout');
     }
   };
 
@@ -43,6 +50,14 @@ const AdminDashboard = () => {
       >
         <Text style={styles.buttonText}>Order Details</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('AdminHireRequests')}
+      >
+        <Text style={styles.buttonText}>Hire Requests</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
         <Text style={styles.buttonText}>Logout</Text>
       </TouchableOpacity>

@@ -140,7 +140,6 @@
 // export default TabNavigator;
 
 
-
 // app/(tabs)/TabNavigatorUser.tsx
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -148,6 +147,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 // Import your user screens
 import UserHomeScreen from '../UserScreens/home';
+import HirePersonScreen from '../UserScreens/HirePerson';
 import TrackOrderScreen from '../UserScreens/track_order';
 import ProfileScreen from '../UserScreens/profile';
 
@@ -163,6 +163,8 @@ const TabNavigatorUser = () => {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Hire') {
+            iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'TrackOrder') {
             iconName = focused ? 'receipt' : 'receipt-outline';
           } else if (route.name === 'Profile') {
@@ -176,6 +178,7 @@ const TabNavigatorUser = () => {
       })}
     >
       <Tab.Screen name="Home" component={UserHomeScreen} />
+      <Tab.Screen name="Hire" component={HirePersonScreen} options={{ title: 'Hire a Person' }} />
       <Tab.Screen name="TrackOrder" component={TrackOrderScreen} options={{ title: 'My Orders' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
