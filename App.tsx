@@ -15,6 +15,7 @@ import TabNavigatorDelivery from './app/(tabs)/TabNavigatorDelivery';
 
 // Import all Authentication screens for logged-out users
 import LoginScreen from './app/UserScreens/Login';
+import WelcomeScreen from './app/UserScreens/WelcomeScreen';
 import OtpScreen from './app/UserScreens/OtpScreen';
 import VendorLoginScreen from './app/screens/VendorLogin';
 import DeliveryLoginScreen from './app/DeliveryScreens/DeliveryLogin';
@@ -49,6 +50,7 @@ import UserOrderDetails from './app/UserScreens/UserOrderDetails';
  */
 export type RootStackParamList = {
   // --- Unauthenticated Screens ---
+  Welcome: undefined;
   Login: undefined;
   VendorLogin: undefined;
   DeliveryLogin: undefined;
@@ -175,7 +177,7 @@ export default function App() {
           {!firebaseUser ? (
             // --- Group of screens to show when the user is LOGGED OUT ---
             <>
-              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="OtpScreen" component={OtpScreen} />
               <Stack.Screen name="VendorLogin" component={VendorLoginScreen} />
               <Stack.Screen name="DeliveryLogin" component={DeliveryLoginScreen} />
