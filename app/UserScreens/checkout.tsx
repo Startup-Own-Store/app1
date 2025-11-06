@@ -13,7 +13,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+const MaterialIcons: any = (require('react-native-vector-icons/MaterialIcons').default ?? require('react-native-vector-icons/MaterialIcons'));
 import { useNavigation, useRoute } from '@react-navigation/native';
 import supabase from '../../SupabaseClient';
 

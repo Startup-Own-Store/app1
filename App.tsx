@@ -3,12 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-<<<<<<< HEAD
-import AsyncStorage from '@react-native-async-storage/async-storage';
-=======
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { Session } from '@supabase/supabase-js';
->>>>>>> 130a50f84d7c9dbd27f692b0bcccf00b41f361c3
 
 import supabase from './SupabaseClient';
 import { MenuProvider } from './app/screens/MenuContext';
@@ -52,15 +48,9 @@ import OrderAcceptedScreen from './app/screens/CheckOut';
 import AddItemScreen from './app/screens/add_item';
 import ProductDetailsScreen from './app/screens/product_details';
 import UserOrderDetails from './app/UserScreens/UserOrderDetails';
-<<<<<<< HEAD
-import UserHomeScreen from './app/UserScreens/home';
-=======
 import VendorAddressMapScreen from './app/screens/VendorAddressMapScreen';
 import VendorProfileScreen from './app/screens/VendorProfileScreen';
 import LiveLocationPermission from './app/DeliveryScreens/LiveLocationPermission';
-
-// Import the LiveLocationPermission component
->>>>>>> 130a50f84d7c9dbd27f692b0bcccf00b41f361c3
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -139,15 +129,6 @@ declare global {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-<<<<<<< HEAD
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<string>('user');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-=======
   const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -181,6 +162,7 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkFirebaseAuth = () => {
@@ -192,7 +174,7 @@ export default function App() {
       if (user) {
         // User is signed in with Firebase
         // Fetch their role from Supabase database
-        await fetchUserRole(user.uid);
+        await fetchSupabaseUserRole(user.uid);
       } else {
         // User is signed out
         setUserRole(null);
@@ -227,7 +209,7 @@ export default function App() {
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if ((error as any).code === 'PGRST116') {
           console.log('User not found in users table, defaulting to user role');
           setUserRole('user');
           return;
@@ -238,8 +220,8 @@ export default function App() {
       }
 
       if (data) {
-        console.log('User role fetched from table:', data.role);
-        setUserRole(data.role || 'user');
+        console.log('User role fetched from table:', (data as any).role);
+        setUserRole((data as any).role || 'user');
       } else {
         console.log('No user data found, defaulting to user role');
         setUserRole('user');
@@ -247,26 +229,6 @@ export default function App() {
     } catch (error) {
       console.error('Exception while fetching user role:', error);
       setUserRole('user');
-    }
-  };
->>>>>>> 130a50f84d7c9dbd27f692b0bcccf00b41f361c3
-
-  /**
-   * Check if user is logged in using AsyncStorage
-   */
-  const checkLoginStatus = async () => {
-    try {
-      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
-      const role = await AsyncStorage.getItem('userRole');
-      
-      setIsLoggedIn(loggedIn === 'true');
-      setUserRole(role || 'user');
-    } catch (error) {
-      console.error('Error checking login status:', error);
-      setIsLoggedIn(false);
-      setUserRole('user');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -278,30 +240,17 @@ export default function App() {
     );
   }
 
-  const isAuthenticated = firebaseUser || supabaseSession;
+  const isAuthenticated = !!firebaseUser || !!supabaseSession;
 
   return (
     <MenuProvider>
-      <NavigationContainer
-        onStateChange={() => {
-          // Check login status whenever navigation state changes
-          checkLoginStatus();
-        }}
-      >
+      <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-<<<<<<< HEAD
-          {!isLoggedIn ? (
-            // --- Group of screens to show when the user is LOGGED OUT ---
-            <>
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
-              <Stack.Screen name="NameInputScreen" component={NameInputScreen} />
-=======
           {!isAuthenticated ? (
             // --- Group of screens to show when the user is LOGGED OUT ---
             <>
               <Stack.Screen name="LoginEmail" component={LoginEmailScreen} />
               <Stack.Screen name="SignupEmail" component={SignupEmailScreen} />
->>>>>>> 130a50f84d7c9dbd27f692b0bcccf00b41f361c3
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="OtpScreen" component={OtpScreen} />
               <Stack.Screen name="VendorLogin" component={VendorLoginScreen} />
@@ -327,14 +276,13 @@ export default function App() {
               <Stack.Screen name="VendorProfile" component={VendorProfileScreen} />
               <Stack.Screen name="VendorAddressMap" component={VendorAddressMapScreen} />
             </>
-         // In your App.tsx, update the delivery user section:
-) : userRole === 'delivery' ? (
-  // --- Screen for the LOGGED IN DELIVERY partner ---
-  <>
-    <Stack.Screen name="LiveLocationPermission" component={LiveLocationPermission} />
-    <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />
-  </>
-) : (
+          ) : userRole === 'delivery' ? (
+            // --- Screen for the LOGGED IN DELIVERY partner ---
+            <>
+              <Stack.Screen name="LiveLocationPermission" component={LiveLocationPermission} />
+              <Stack.Screen name="MainDelivery" component={TabNavigatorDelivery} />
+            </>
+          ) : (
             // --- Group of screens for the default LOGGED IN USER ---
             <>
               <Stack.Screen name="MainUser" component={TabNavigatorUser} />

@@ -13,22 +13,9 @@ const AdminDashboard = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const handleLogout = async () => {
-<<<<<<< HEAD
     const { error } = await supabase.auth.signOut();
     if (error) {
       Alert.alert('Logout Error', error.message);
-=======
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        Alert.alert('Logout Error', error.message);
-      } else {
-        Alert.alert('Success', 'Logged out successfully');
-      }
-    } catch (err) {
-      console.error('Logout error:', err);
-      Alert.alert('Error', 'Failed to logout');
->>>>>>> 130a50f84d7c9dbd27f692b0bcccf00b41f361c3
     }
   };
 

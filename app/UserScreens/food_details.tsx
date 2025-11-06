@@ -16,7 +16,9 @@ import {
 // definitions for react-native-vector-icons are not installed.
 // Run this command in your terminal to fix it:
 // npm install @types/react-native-vector-icons --save-dev
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialIconsModule from 'react-native-vector-icons/MaterialIcons';
+// Workaround for conflicting @types/react versions: cast the imported module to a React component type
+const MaterialIcons = (MaterialIconsModule as unknown) as React.ComponentType<any>;
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
