@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import supabase from './SupabaseClient';
 import { MenuProvider } from './app/screens/MenuContext';
@@ -44,6 +44,7 @@ import OrderAcceptedScreen from './app/screens/CheckOut';
 import AddItemScreen from './app/screens/add_item';
 import ProductDetailsScreen from './app/screens/product_details';
 import UserOrderDetails from './app/UserScreens/UserOrderDetails';
+import UserHomeScreen from './app/UserScreens/home';
 
 /**
  * This is the single source of truth for all navigation routes in the app.
@@ -51,6 +52,7 @@ import UserOrderDetails from './app/UserScreens/UserOrderDetails';
 export type RootStackParamList = {
   // --- Unauthenticated Screens ---
   Welcome: undefined;
+  Home: undefined;
   Login: undefined;
   VendorLogin: undefined;
   DeliveryLogin: undefined;
@@ -99,85 +101,56 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthTypes.User | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string>('user');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen to Firebase auth state changes
-    const unsubscribe = auth().onAuthStateChanged(async (user) => {
-      console.log('Firebase auth state changed:', user?.uid);
-      setFirebaseUser(user);
-
-      if (user) {
-        // User is signed in with Firebase
-        // Fetch their role from Supabase database
-        await fetchUserRole(user.uid);
-      } else {
-        // User is signed out
-        setUserRole(null);
-      }
-
-      setLoading(false);
-    });
-
-    return unsubscribe;
+    checkLoginStatus();
   }, []);
 
   /**
-   * Fetches user role from Supabase database using Firebase UID
+   * Check if user is logged in using AsyncStorage
    */
-  const fetchUserRole = async (firebaseUid: string) => {
+  const checkLoginStatus = async () => {
     try {
-      console.log('Fetching user role for Firebase UID:', firebaseUid);
-
-      const { data, error } = await supabase
-        .from('firebase_users')
-        .select('role')
-        .eq('firebase_uid', firebaseUid)
-        .single();
-
-      if (error) {
-        // PGRST116 means no rows found - user doesn't exist yet (will be created by sync)
-        if (error.code === 'PGRST116') {
-          console.log('User not found in database yet, will be created by sync');
-          setUserRole('user');
-          return;
-        }
-        console.error('Error fetching user role:', error);
-        setUserRole('user');
-        return;
-      }
-
-      if (data) {
-        console.log('User role fetched:', data.role);
-        setUserRole(data.role || 'user');
-      } else {
-        console.log('No user data found, defaulting to user role');
-        setUserRole('user');
-      }
+      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
+      const role = await AsyncStorage.getItem('userRole');
+      
+      setIsLoggedIn(loggedIn === 'true');
+      setUserRole(role || 'user');
     } catch (error) {
-      console.error('Exception while fetching user role:', error);
+      console.error('Error checking login status:', error);
+      setIsLoggedIn(false);
       setUserRole('user');
+    } finally {
+      setLoading(false);
     }
   };
 
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#6c5ce7" />
+        <ActivityIndicator size="large" color="#ec8627" />
       </View>
     );
   }
 
   return (
     <MenuProvider>
-      <NavigationContainer>
+      <NavigationContainer
+        onStateChange={() => {
+          // Check login status whenever navigation state changes
+          checkLoginStatus();
+        }}
+      >
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!firebaseUser ? (
+          {!isLoggedIn ? (
             // --- Group of screens to show when the user is LOGGED OUT ---
             <>
               <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="NameInputScreen" component={NameInputScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="OtpScreen" component={OtpScreen} />
               <Stack.Screen name="VendorLogin" component={VendorLoginScreen} />
               <Stack.Screen name="DeliveryLogin" component={DeliveryLoginScreen} />

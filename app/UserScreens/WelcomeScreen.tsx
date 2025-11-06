@@ -77,7 +77,7 @@ const WelcomeScreen = ({ navigation }: any) => {
           <Animated.View style={[styles.buttonWrapper, { opacity: fadeAnim, transform: [{ scale: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }] }]}>
             <TouchableOpacity
               style={styles.getStartedButton}
-              onPress={() => navigation.replace('Home')}
+              onPress={() => navigation.navigate('NameInputScreen')}
               activeOpacity={0.8}
             >
               <Text style={styles.getStartedButtonText}>Start Hiring Now</Text>

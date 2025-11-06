@@ -10,17 +10,17 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import supabase from '../../SupabaseClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import auth from '@react-native-firebase/auth';
-import { syncFirebaseUserToSupabase } from '../utils/firebaseSupabaseSync';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
 
 const NameInputScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  // Update the display name in Firebase and sync to Supabase
+  // Save user data locally and navigate to main app
   const handleSave = async () => {
     if (!name.trim()) {
       return Alert.alert('Error', 'Please enter your name.');
@@ -28,33 +28,24 @@ const NameInputScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      const firebaseUser = auth().currentUser;
-      if (!firebaseUser) {
-        throw new Error('No authenticated user found');
-      }
+      // Save user data to AsyncStorage
+      const userData = {
+        name: name.trim(),
+        createdAt: new Date().toISOString(),
+      };
+      
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      await AsyncStorage.setItem('isLoggedIn', 'true');
 
-      // Update Firebase user profile
-      await firebaseUser.updateProfile({
-        displayName: name.trim(),
-      });
-
-      console.log('Display name updated in Firebase');
-
-      // ✅ Sync updated user data to Supabase
-      const { success, error: syncError } = await syncFirebaseUserToSupabase('user');
-
-      if (!success) {
-        console.warn('Failed to sync to Supabase:', syncError);
-        // Don't block the user - they can still proceed
-      } else {
-        console.log('User profile synced to Supabase successfully');
-      }
-
-      Alert.alert('Success', 'Profile updated successfully!');
-      // Navigation will be handled by App.tsx auth state change
+      console.log('User data saved locally');
+      
+      // Navigate to main app - this will be handled by App.tsx state change
+      // We'll trigger a re-render by using a callback or you can navigate directly
+      // For now, we'll just set the flag and let App.tsx handle it
+      
     } catch (error) {
-      console.error('Error updating name:', error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      console.error('Error saving user data:', error);
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -64,14 +55,22 @@ const NameInputScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Enter Your Name</Text>
+        <Text style={styles.subtitle}>We'd love to know what to call you!</Text>
         <TextInput
           style={styles.input}
           placeholder="Your Name"
+          placeholderTextColor="#8a7260"
           value={name}
           onChangeText={setName}
         />
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+          onPress={handleSave}
+          disabled={loading}
+        >
+          <Text style={styles.saveButtonText}>
+            {loading ? 'Saving...' : 'Continue'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -81,36 +80,46 @@ const NameInputScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fcfaf8',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 8,
     color: '#181411',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#8a7260',
+    marginBottom: 32,
+    textAlign: 'center',
   },
   input: {
     width: '100%',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#f5f2f0',
+    borderRadius: 12,
+    marginBottom: 20,
     fontSize: 16,
     color: '#181411',
   },
   saveButton: {
     backgroundColor: '#ec8627',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 26,
+    width: '100%',
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   saveButtonText: {
     fontSize: 16,

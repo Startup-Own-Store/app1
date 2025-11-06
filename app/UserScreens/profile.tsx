@@ -11,18 +11,40 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import supabase from '../../SupabaseClient';// Adjust the import based on your project structure
-import FirebaseClient from '../../FirebaseClient'; // Adjust the import based on your project structure
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import MaterialIconsImport from 'react-native-vector-icons/MaterialIcons';
+const MaterialIcons = MaterialIconsImport as any;
+
 const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackOrder?: () => void }) => {
   const [userName, setUserName] = React.useState('');
   const [userPhone, setUserPhone] = React.useState('');
 
   const handleLogout = async () => {
-    const { error } = await FirebaseClient.signOut();
-    if (error) {
-      Alert.alert('Logout Error', error.message);
-    }
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('isLoggedIn');
+              await AsyncStorage.removeItem('userData');
+              await AsyncStorage.removeItem('userRole');
+              // App will automatically navigate to Welcome screen
+            } catch (error) {
+              console.error('Error logging out:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const menuItems = [
@@ -36,17 +58,18 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
     { id: '8', title: 'Logout', icon: 'logout', onPress: handleLogout },
   ];
 
-  // Fetch the `Display name` and phone number using Supabase Authentication API
+  // Fetch user details from AsyncStorage
   React.useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const user = FirebaseClient.getCurrentUser();
-        if (user) {
-          setUserName(user.displayName || '');
-          setUserPhone(user.phoneNumber || '');
+        const userDataString = await AsyncStorage.getItem('userData');
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          setUserName(userData.name || '');
+          setUserPhone(userData.phone || '');
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
+        console.error('Error fetching user details:', err);
       }
     };
 

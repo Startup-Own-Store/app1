@@ -15,12 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState, useEffect } from 'react';
-
-// FIX: If you see an error on the line below, it's likely because the type
-// definitions for react-native-vector-icons are not installed.
-// Run this command in your terminal to fix it:
-// npm install @types/react-native-vector-icons --save-dev
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+const MaterialIcons: any = require('react-native-vector-icons/MaterialIcons');
 import { RootStackParamList } from '../../App';
 import supabase from '../../SupabaseClient';
 
