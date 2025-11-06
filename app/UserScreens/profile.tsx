@@ -20,31 +20,10 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
   const [userPhone, setUserPhone] = React.useState('');
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('isLoggedIn');
-              await AsyncStorage.removeItem('userData');
-              await AsyncStorage.removeItem('userRole');
-              // App will automatically navigate to Welcome screen
-            } catch (error) {
-              console.error('Error logging out:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    const { error } = await FirebaseClient.signOut();
+    if (error) {
+      Alert.alert('Logout Error', error.message);
+    }
   };
 
   const menuItems = [
@@ -58,15 +37,14 @@ const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackO
     { id: '8', title: 'Logout', icon: 'logout', onPress: handleLogout },
   ];
 
-  // Fetch user details from AsyncStorage
+  // Fetch the `Display name` and phone number using Supabase Authentication API
   React.useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const userDataString = await AsyncStorage.getItem('userData');
-        if (userDataString) {
-          const userData = JSON.parse(userDataString);
-          setUserName(userData.name || '');
-          setUserPhone(userData.phone || '');
+        const user = FirebaseClient.getCurrentUser();
+        if (user) {
+          setUserName(user.displayName || '');
+          setUserPhone(user.phoneNumber || '');
         }
       } catch (err) {
         console.error('Error fetching user details:', err);
