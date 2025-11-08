@@ -43,12 +43,12 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
-
     namespace 'com.ajay.ownstoredemo'
+    
+    compileSdk 35
+    buildToolsVersion "35.0.0"
+    ndkVersion "27.1.12297006"
+
     defaultConfig {
         applicationId 'com.ajay.ownstoredemo'
         minSdkVersion 24
@@ -154,5 +154,5 @@ configurations.all {
         force 'androidx.browser:browser:1.8.0'
     }
 }
-
 apply plugin: 'com.google.gms.google-services'
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

@@ -66,7 +66,8 @@ app.get('/', (req, res) => {
       { method: 'GET', path: '/health', description: 'Health check' },
       { method: 'GET', path: '/', description: 'API info' },
       { method: 'POST', path: '/app/api/create-order', description: 'Create order' },
-      { method: 'POST', path: '/app/api/sync-firebase-user', description: 'Sync Firebase user to Supabase' }
+      { method: 'POST', path: '/app/api/sync-firebase-user', description: 'Sync Firebase user to Supabase' },
+      { method: 'POST', path: '/app/api/register-guest-user', description: 'Create or validate guest Supabase user' }
     ]
   });
 });
@@ -115,6 +116,26 @@ app.post('/app/api/sync-firebase-user', async (req, res) => {
     await syncFirebaseUser(req, res);
   } catch (error) {
     console.error('❌ Error in sync-firebase-user handler:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+  }
+});
+
+app.get('/app/api/register-guest-user', (req, res) => {
+  res.status(200).json({
+    error: 'Method not allowed',
+    message: 'Use POST /app/api/register-guest-user to create or validate a guest user',
+  });
+});
+
+app.post('/app/api/register-guest-user', async (req, res) => {
+  console.log('🧾 Guest user registration request received');
+  try {
+    const registerGuestUser = require('./app/api/register-guest-user');
+    await registerGuestUser(req, res);
+  } catch (error) {
+    console.error('❌ Error in register-guest-user handler:', error);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal server error', details: error.message });
     }

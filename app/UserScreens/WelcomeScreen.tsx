@@ -9,11 +9,16 @@ import {
   Animated,
   Alert,
 } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+
+import { RootStackParamList } from '../../App';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // --- ENHANCED WELCOME SCREEN FOR OWNSTORE (Clean, Modern, Hiring/Consulting Focus) ---
-const WelcomeScreen = ({ navigation }: any) => {
+type WelcomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Welcome'>;
+
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -77,7 +82,7 @@ const WelcomeScreen = ({ navigation }: any) => {
           <Animated.View style={[styles.buttonWrapper, { opacity: fadeAnim, transform: [{ scale: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }] }]}>
             <TouchableOpacity
               style={styles.getStartedButton}
-              onPress={() => navigation.navigate('NameInputScreen')}
+              onPress={() => navigation.navigate('NameInput')}
               activeOpacity={0.8}
             >
               <Text style={styles.getStartedButtonText}>Start Hiring Now</Text>
@@ -100,7 +105,7 @@ const styles = StyleSheet.create({
     top: 10,
     right: 10,
     zIndex: 10,
-    padding: 6,
+    padding: 20,
     backgroundColor: 'rgba(0, 121, 107, 0.15)',
     borderRadius: 14,
     opacity: 0.25, // Even subtler

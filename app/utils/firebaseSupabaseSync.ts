@@ -2,7 +2,7 @@ import auth from '@react-native-firebase/auth';
 import { Platform } from 'react-native';
 
 // Update this URL based on your environment
-const getApiUrl = () => {
+export const getApiUrl = () => {
   if (__DEV__) {
     // Development mode - use your computer's IP address
     // This works for both Android emulator and physical devices

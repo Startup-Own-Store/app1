@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   Platform,
   StatusBar,
@@ -13,13 +12,21 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Image,
-  Alert,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 const MaterialIcons: any = (require('react-native-vector-icons/MaterialIcons').default ?? require('react-native-vector-icons/MaterialIcons'));
 import supabase from '../../SupabaseClient';
 import AddEditAddress from './AddEditAddress';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getOrCreateGuestUserId } from '../utils/guestUser';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MainTabParamList, RootStackParamList } from '../../App';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -51,7 +58,7 @@ const topServices = [
   { id: '1', name: 'Electrician', icon: 'electrical-services' },
   { id: '2', name: 'Plumber', icon: 'plumbing' },
   { id: '3', name: 'Maid', icon: 'cleaning-services' },
-  { id: '4', name: 'Consultancies', icon: 'psychology' },
+  { id: '4', name: 'Consultancy', icon: 'psychology' },
   { id: '5', name: 'Other Needs', icon: 'work-outline' },
 ];
 const consultancies = [
@@ -78,6 +85,10 @@ const defaultAddresses = [
 
 // --- MAIN COMPONENT ---
 const HirePerson = () => {
+  const navigation = useNavigation<CompositeNavigationProp<
+    BottomTabNavigationProp<MainTabParamList, 'Hire'>,
+    NativeStackNavigationProp<RootStackParamList>
+  >>();
   const [serviceModalVisible, setServiceModalVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [selectedService, setSelectedService] = useState('');
@@ -94,29 +105,52 @@ const HirePerson = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [showAddressEditor, setShowAddressEditor] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogMessage, setDialogMessage] = useState('');
+  const [dialogVariant, setDialogVariant] = useState<'success' | 'error' | 'info'>('info');
+  const dialogActionRef = useRef<(() => void) | null>(null);
 
-  // Get current user on component mount
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        BackHandler.exitApp();
+        return true;
+      };
+
+  const subscription = BackHandler.addEventListener('hardwareBackPress', onBack);
+  return () => subscription.remove();
+    }, [])
+  );
+
   useEffect(() => {
-    getCurrentUser();
-  }, []);
-
-  const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
-      // Optionally fetch user profile to pre-fill name and phone
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('name, phone')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (profile) {
-        setFullName(profile.name || '');
-        setPhoneNumber(profile.phone || '');
+    const hydrateSession = async () => {
+      try {
+        const storedSession = await AsyncStorage.getItem('userSession');
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession);
+          const baseSession = parsed && typeof parsed === 'object' ? parsed : {};
+          if (baseSession?.id) {
+            setUserId(baseSession.id);
+          }
+          if (baseSession?.name) {
+            setFullName(baseSession.name);
+          }
+          if (baseSession?.phone) {
+            setPhoneNumber(baseSession.phone);
+          }
+        }
+        const storedName = await AsyncStorage.getItem('userName');
+        if (storedName) {
+          setFullName((prev) => prev || storedName);
+        }
+      } catch (sessionError) {
+        console.error('Failed to hydrate session', sessionError);
       }
-    }
-  };
+    };
+
+    hydrateSession();
+  }, []);
 
   const openServiceModal = (serviceName: string, isConsult: boolean = false, isOther: boolean = false) => {
     setSelectedService(serviceName);
@@ -164,6 +198,28 @@ const HirePerson = () => {
     setEditingAddress(null);
   };
 
+  const showDialog = (
+    title: string,
+    message: string,
+    variant: 'success' | 'error' | 'info',
+    onConfirm?: () => void
+  ) => {
+    setDialogTitle(title);
+    setDialogMessage(message);
+    setDialogVariant(variant);
+    dialogActionRef.current = onConfirm ?? null;
+    setDialogVisible(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogVisible(false);
+    const action = dialogActionRef.current;
+    dialogActionRef.current = null;
+    if (action) {
+      action();
+    }
+  };
+
   // --- FIXED IMAGE PICKER FUNCTION ---
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -181,7 +237,7 @@ const HirePerson = () => {
       }
       setSelectedImages(prev => [...prev, newImage]);
     } else {
-      Alert.alert('Canceled', 'No image selected');
+      showDialog('Canceled', 'No image selected', 'info');
     }
   };
 
@@ -192,24 +248,26 @@ const HirePerson = () => {
   // --- SUBMIT HIRE REQUEST ---
   const handleSubmitRequest = async () => {
     // Validation
-    if (!userId) {
-      Alert.alert('Error', 'You must be logged in to submit a request');
-      return;
-    }
-
     if (!fullName.trim() || !phoneNumber.trim()) {
-      Alert.alert('Error', 'Please fill in your name and phone number');
+      showDialog('Missing information', 'Please fill in your name and phone number', 'error');
       return;
     }
 
     if (isOtherNeeds && !jobDescription.trim()) {
-      Alert.alert('Error', 'Please describe what you need');
+      showDialog('More details needed', 'Please describe what you need', 'error');
       return;
     }
 
     setLoading(true);
 
     try {
+      const effectiveUserId = await getOrCreateGuestUserId({
+        currentId: userId,
+        name: fullName.trim(),
+        phone: phoneNumber.trim(),
+      });
+      setUserId(effectiveUserId);
+
       // Prepare image URLs (for now, store as URIs - in production, upload to Supabase Storage)
       const imageUrls = selectedImages.map(img => img.uri);
 
@@ -218,7 +276,7 @@ const HirePerson = () => {
         .from('user_hire_requests')
         .insert([
           {
-            user_id: userId,
+            user_id: effectiveUserId,
             service_name: selectedService,
             service_category: selectedService,
             is_consultancy: isConsultancy,
@@ -236,29 +294,46 @@ const HirePerson = () => {
 
       if (error) {
         console.error('Error submitting request:', error);
-        Alert.alert('Error', 'Failed to submit request. Please try again.');
+        showDialog('Error', 'Failed to submit request. Please try again.', 'error');
         return;
       }
 
+      try {
+        const storedSession = await AsyncStorage.getItem('userSession');
+        const parsedSession = storedSession ? JSON.parse(storedSession) : {};
+        const baseSession =
+          parsedSession && typeof parsedSession === 'object' ? parsedSession : {};
+        const nextSession = {
+          ...baseSession,
+          id: baseSession.id || effectiveUserId,
+          name: fullName.trim(),
+          phone: phoneNumber.trim(),
+          updatedAt: new Date().toISOString(),
+        };
+        nextSession.id = effectiveUserId;
+
+        await AsyncStorage.multiSet([
+          ['userName', fullName.trim()],
+          ['userSession', JSON.stringify(nextSession)],
+        ]);
+      } catch (sessionUpdateError) {
+        console.warn('Failed to update cached session', sessionUpdateError);
+      }
+
       // Success
-      Alert.alert(
+      showDialog(
         'Success!',
         'Your service request has been submitted. We will connect you with a professional soon.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setServiceModalVisible(false);
-              // Reset form
-              setJobDescription('');
-              setSelectedImages([]);
-            },
-          },
-        ]
+        'success',
+        () => {
+          setServiceModalVisible(false);
+          setJobDescription('');
+          setSelectedImages([]);
+        }
       );
     } catch (error) {
       console.error('Exception submitting request:', error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      showDialog('Error', 'An unexpected error occurred. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -589,7 +664,14 @@ const HirePerson = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+      <View style={{ height: StatusBar.currentHeight, backgroundColor: 'transparent' }} />
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
       {/* Address Editor Modal */}
       <Modal
         animationType="slide"
@@ -928,10 +1010,7 @@ const HirePerson = () => {
       </Modal>
 
       {/* Header (Responsive) */}
-      <View style={[
-        styles.container,
-        { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }
-      ]}>
+      <View style={[styles.container]}>
         <View style={[
           styles.header,
           { paddingHorizontal: Math.min(18, SCREEN_WIDTH * 0.045), paddingVertical: Math.min(14, SCREEN_HEIGHT * 0.018) }
@@ -943,7 +1022,7 @@ const HirePerson = () => {
             <Text style={[
               styles.locationHeaderTitle,
               { fontSize: Math.min(12, SCREEN_WIDTH * 0.03) }
-            ]}>DELIVERING TO</Text>
+            ]}>SERVICE ADDRESS</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={[
                 styles.locationHeaderAddress,
@@ -955,7 +1034,9 @@ const HirePerson = () => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+          >
             <View style={[
               styles.notificationButton,
               { width: Math.min(44, SCREEN_WIDTH * 0.11), height: Math.min(44, SCREEN_HEIGHT * 0.057) }
@@ -979,6 +1060,36 @@ const HirePerson = () => {
         />
       </View>
     </SafeAreaView>
+        <Modal
+          visible={dialogVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={handleCloseDialog}
+        >
+          <View style={styles.dialogOverlay}>
+            <View
+              style={[
+                styles.dialogCard,
+                dialogVariant === 'success'
+                  ? styles.dialogSuccess
+                  : dialogVariant === 'error'
+                  ? styles.dialogError
+                  : styles.dialogInfo,
+              ]}
+            >
+              <Text style={styles.dialogTitle}>{dialogTitle}</Text>
+              <Text style={styles.dialogMessage}>{dialogMessage}</Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.dialogButton}
+                onPress={handleCloseDialog}
+              >
+                <Text style={styles.dialogButtonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+    </>
   );
 };
 
@@ -998,10 +1109,12 @@ const COLORS = {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: 'transparent',
+    paddingTop: 0,
   },
   container: {
     flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
     flexDirection: 'row',
@@ -1010,6 +1123,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.BACKGROUND,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.SURFACE_ALT,
+    paddingTop: (StatusBar.currentHeight ?? 0) * 0.3,
+    marginTop: 0, 
   },
   locationHeader: {
     flex: 1,
@@ -1355,6 +1470,59 @@ const styles = StyleSheet.create({
   safetyBannerTextSubtitle: {
     color: COLORS.TEXT_SECONDARY,
     lineHeight: Math.min(20, SCREEN_HEIGHT * 0.026),
+  },
+  dialogOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  dialogCard: {
+    width: '100%',
+    borderRadius: Math.min(20, SCREEN_WIDTH * 0.05),
+    padding: Math.min(24, SCREEN_WIDTH * 0.06),
+    backgroundColor: COLORS.SURFACE,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  dialogSuccess: {
+    borderLeftWidth: 6,
+    borderLeftColor: COLORS.PRIMARY,
+  },
+  dialogError: {
+    borderLeftWidth: 6,
+    borderLeftColor: '#c0392b',
+  },
+  dialogInfo: {
+    borderLeftWidth: 6,
+    borderLeftColor: '#ec8627',
+  },
+  dialogTitle: {
+    fontSize: Math.min(20, SCREEN_WIDTH * 0.05),
+    fontWeight: '700',
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: Math.min(10, SCREEN_HEIGHT * 0.013),
+  },
+  dialogMessage: {
+    fontSize: Math.min(15, SCREEN_WIDTH * 0.038),
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: Math.min(20, SCREEN_HEIGHT * 0.026),
+    lineHeight: Math.min(21, SCREEN_HEIGHT * 0.027),
+  },
+  dialogButton: {
+    alignSelf: 'flex-end',
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: Math.min(24, SCREEN_WIDTH * 0.06),
+    paddingVertical: Math.min(10, SCREEN_HEIGHT * 0.013),
+    borderRadius: 999,
+  },
+  dialogButtonText: {
+    color: COLORS.SURFACE,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
 });
 
