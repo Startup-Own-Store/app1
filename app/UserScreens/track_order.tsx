@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Image,
   FlatList,
   Platform,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import supabase from '../../SupabaseClient'; // Import Supabase client
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // FIX: If you see an error on the line below, it's likely because the type
 // definitions for react-native-vector-icons are not installed.

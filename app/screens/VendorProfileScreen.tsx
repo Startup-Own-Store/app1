@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     ScrollView,
     TextInput,
     Alert,
@@ -15,6 +14,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import supabase from '../../SupabaseClient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface VendorProfile {
   user_id: string;

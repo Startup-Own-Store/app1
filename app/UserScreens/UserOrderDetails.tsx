@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   FlatList,
   Platform,
@@ -11,6 +10,7 @@ import {
 } from 'react-native';
 const MaterialIcons: any = (require('react-native-vector-icons/MaterialIcons').default ?? require('react-native-vector-icons/MaterialIcons'));
 import supabase from '../../SupabaseClient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const UserOrderDetails = ({ route, navigation }: { route: any; navigation: any }) => {
   const { order } = route.params;

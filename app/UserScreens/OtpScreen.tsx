@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   Platform,
   StatusBar,
@@ -16,6 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import auth, { PhoneAuthProvider } from '@react-native-firebase/auth';
 import Home from '../UserScreens/home';
 import { syncFirebaseUserToSupabase } from '../utils/firebaseSupabaseSync';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Define the RootStackParamList to match your App.tsx
 type RootStackParamList = {

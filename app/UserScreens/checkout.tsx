@@ -6,7 +6,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Platform,
   StatusBar,
@@ -16,6 +15,7 @@ import {
 const MaterialIcons: any = (require('react-native-vector-icons/MaterialIcons').default ?? require('react-native-vector-icons/MaterialIcons'));
 import { useNavigation, useRoute } from '@react-navigation/native';
 import supabase from '../../SupabaseClient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CheckoutScreen: React.FC = () => {
   // Helper function to place order in DB

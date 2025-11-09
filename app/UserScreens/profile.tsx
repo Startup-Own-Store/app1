@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Platform,
   StatusBar,
@@ -14,6 +13,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIconsImport from 'react-native-vector-icons/MaterialIcons';
 const MaterialIcons = MaterialIconsImport as any;
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileScreen = ({ onBack, onTrackOrder }: { onBack?: () => void, onTrackOrder?: () => void }) => {
   const [userName, setUserName] = React.useState('');

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
   Platform,
   StatusBar,
@@ -18,6 +17,7 @@ import MapView, { Marker, Region, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from 'reac
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import supabase from '../../SupabaseClient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

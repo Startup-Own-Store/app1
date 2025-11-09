@@ -9,12 +9,12 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import supabase from '../../SupabaseClient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Define navigation types
 type RootStackParamList = {
