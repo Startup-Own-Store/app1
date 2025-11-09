@@ -29,7 +29,7 @@ interface LocationData {
 }
 
 const VendorAddressMapScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute();
   const mapRef = useRef<MapView>(null);
   
