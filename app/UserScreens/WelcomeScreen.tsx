@@ -30,7 +30,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 
   // --- HIDDEN ADMIN LOGIN TRIGGER ---
   const handleAdminAccess = () => {
-    Alert.alert('Admin Access', 'Enter admin credentials or navigate to login.', [
+    Alert.alert('Admin Access', 'Only admin can access this section.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Login', onPress: () => navigation.navigate('AdminLogin') },
     ]);

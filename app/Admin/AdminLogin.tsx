@@ -11,29 +11,42 @@ import {
   StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import supabase from '../../SupabaseClient';
+import { RootStackParamList } from '../../App';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'AdminLogin'>>();
 
   const handleLogin = async () => {
     if (loading) return;
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Missing Details', 'Please enter your admin email and password.');
+      return;
+    }
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         Alert.alert('Login Failed', error.message);
+        return;
       }
-      // On success, the onAuthStateChange listener in App.tsx will navigate
+
+      if (!data.session) {
+        Alert.alert('Login Error', 'No session returned from Supabase. Please try again.');
+        return;
+      }
+
+      navigation.reset({ index: 0, routes: [{ name: 'AdminDashboard' }] });
     } catch (err: any) {
       Alert.alert('Login Error', err.message);
     } finally {

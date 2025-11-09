@@ -7,19 +7,31 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
+import SplashScreen from './app/UserScreens/SplashScreen';
 import WelcomeScreen from './app/UserScreens/WelcomeScreen';
 import NameInputScreen from './app/UserScreens/NameInputScreen';
 import HirePersonScreen from './app/UserScreens/HirePerson';
 import ProfileTabScreen from './app/UserScreens/ProfileTab';
 import AdminLoginScreen from './app/Admin/AdminLogin';
+import AdminDashboardScreen from './app/Admin/AdminDashboard';
+import CreateVendorUserScreen from './app/Admin/CreateVendorUser';
+import CreateDeliveryUserScreen from './app/Admin/CreateDeliveryUser';
+import AdminOrderDetailsScreen from './app/Admin/AdminOrderDetails';
+import AdminHireRequestsScreen from './app/Admin/AdminHireRequests';
 import HelpSupportScreen from './app/UserScreens/HelpSupp';
 import NotificationsScreen from './app/UserScreens/Notifications';
 
 export type RootStackParamList = {
+  Splash: { nextRoute: 'Welcome' | 'MainTabs' | null };
   Welcome: undefined;
   NameInput: undefined;
   MainTabs: undefined;
   AdminLogin: undefined;
+  AdminDashboard: undefined;
+  CreateVendorUser: undefined;
+  CreateDeliveryUser: undefined;
+  AdminOrderDetails: undefined;
+  AdminHireRequests: undefined;
   HelpSupport: undefined;
   Notifications: undefined;
 };
@@ -45,11 +57,15 @@ const MainTabs = () => (
       tabBarActiveTintColor: '#00796B',
       tabBarInactiveTintColor: '#888',
       tabBarStyle: {
-        backgroundColor: '#FFFFFF',     // ✅ makes tab bar white
+        backgroundColor: '#FFFFFF',
         borderTopColor: '#DEE2E6',
       },
       tabBarIcon: ({ color, size }) => {
-        const iconName = route.name === 'Hire' ? 'construct-outline' : 'person-circle-outline';
+        const iconName =
+          route.name === 'Hire'
+            ? 'construct-outline'
+            : 'person-circle-outline';
+
         return <Ionicons name={iconName} size={size} color={color} />;
       },
     })}
@@ -65,28 +81,19 @@ export default function App() {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const storedName = await AsyncStorage.getItem('userName');
-        setInitialRoute(storedName ? 'MainTabs' : 'Welcome');
+        const savedName = await AsyncStorage.getItem('userName');
+        setInitialRoute(savedName ? 'MainTabs' : 'Welcome');
       } catch (error) {
         console.error('Failed to load session', error);
         setInitialRoute('Welcome');
       }
     };
+
     loadSession();
   }, []);
 
-  if (!initialRoute) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#00796B" />
-      </View>
-    );
-  }
-
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>  
-      {/* ✅ Global background — removes black bar on all screens */}
-
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -98,7 +105,7 @@ export default function App() {
           ...DefaultTheme,
           colors: {
             ...DefaultTheme.colors,
-            background: '#FFFFFF',     // ✅ ensures React Navigation uses white background
+            background: '#FFFFFF',
             card: '#FFFFFF',
             primary: '#00796B',
             text: '#212529',
@@ -107,17 +114,26 @@ export default function App() {
           },
         }}
       >
-        <Stack.Navigator
-          key={initialRoute}
-          screenOptions={{ headerShown: false }}
-          initialRouteName={initialRoute}
-        >
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+
+          <Stack.Screen
+            name="Splash"
+            component={SplashScreen}
+            initialParams={{ nextRoute: initialRoute }}
+          />
+
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="NameInput" component={NameInputScreen} />
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
+          <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+          <Stack.Screen name="CreateVendorUser" component={CreateVendorUserScreen} />
+          <Stack.Screen name="CreateDeliveryUser" component={CreateDeliveryUserScreen} />
+          <Stack.Screen name="AdminOrderDetails" component={AdminOrderDetailsScreen} />
+          <Stack.Screen name="AdminHireRequests" component={AdminHireRequestsScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
+
         </Stack.Navigator>
       </NavigationContainer>
     </View>

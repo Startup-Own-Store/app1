@@ -16,7 +16,10 @@ const AdminDashboard = () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       Alert.alert('Logout Error', error.message);
+      return;
     }
+
+    navigation.reset({ index: 0, routes: [{ name: 'AdminLogin' }] });
   };
 
   return (
