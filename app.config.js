@@ -10,7 +10,7 @@ export default {
     android: {
       package: "com.ajay.ownstoredemo",
       googleServicesFile: "android/app/google-services.json",
-      versionCode: 1,
+      versionCode: 19,
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_CLOUD_API_KEY

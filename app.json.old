@@ -8,7 +8,7 @@
     "android": {
       "package": "com.ajay.ownstoredemo",
       "googleServicesFile": "android/app/google-services.json",
-      "versionCode": 1,
+      "versionCode": 19,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyClZ3TXRsXBWRcaZp_kcw5LaxJNK9LM83Q"
