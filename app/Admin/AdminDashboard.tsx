@@ -16,7 +16,10 @@ const AdminDashboard = () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       Alert.alert('Logout Error', error.message);
+      return;
     }
+
+    navigation.reset({ index: 0, routes: [{ name: 'AdminLogin' }] });
   };
 
   return (
@@ -43,6 +46,14 @@ const AdminDashboard = () => {
       >
         <Text style={styles.buttonText}>Order Details</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('AdminHireRequests')}
+      >
+        <Text style={styles.buttonText}>Hire Requests</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
         <Text style={styles.buttonText}>Logout</Text>
       </TouchableOpacity>

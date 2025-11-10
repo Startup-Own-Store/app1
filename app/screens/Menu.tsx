@@ -17,7 +17,7 @@ import { useMenu, MenuItem } from './MenuContext';
 
 import supabase from '../../SupabaseClient';
 
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+const MaterialIcons: any = (require('react-native-vector-icons/MaterialIcons').default ?? require('react-native-vector-icons/MaterialIcons'));
 import { useEffect } from 'react';
 
 const VendorMenuScreen = () => {

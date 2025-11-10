@@ -1,60 +1,115 @@
-import React, { useState } from 'react';
+ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
   SafeAreaView,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
-import supabase from '../../SupabaseClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import { RootStackParamList } from '../../App';
 
 const NameInputScreen: React.FC = () => {
   const [name, setName] = useState('');
-  const navigation = useNavigation();
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'NameInput'>>();
 
-  // Update the `Display name` column using Supabase Authentication API
   const handleSave = async () => {
-    if (!name.trim()) {
-      Alert.alert('Error', 'Please enter your name.');
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError('Please enter your name before continuing.');
       return;
     }
 
+    setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { display_name: name },
-      });
+      const storedSessionRaw = await AsyncStorage.getItem('userSession');
+      let session: Record<string, unknown> = {};
 
-      if (error) {
-        console.error('Error updating name:', error);
-        Alert.alert('Error', 'Failed to save name.');
-        return;
+      if (storedSessionRaw) {
+        try {
+          const parsed = JSON.parse(storedSessionRaw);
+          if (parsed && typeof parsed === 'object') {
+            session = parsed;
+          }
+        } catch (parseError) {
+          console.warn('Unable to parse stored session, resetting it.', parseError);
+        }
       }
 
-      Alert.alert('Success', 'Name saved successfully!');
-      navigation.navigate('MainUser' as never);
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      Alert.alert('Error', 'An unexpected error occurred.');
+      if (!session.id) {
+        session.id = `local-${Date.now()}`;
+      }
+
+      const timestamp = new Date().toISOString();
+      if (!session.createdAt) {
+        session.createdAt = timestamp;
+      }
+
+      session.name = trimmed;
+      session.updatedAt = timestamp;
+
+      await AsyncStorage.multiSet([
+        ['userName', trimmed],
+        ['userSession', JSON.stringify(session)],
+      ]);
+      await AsyncStorage.setItem('guestOnboarded', 'true');
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      });
+    } catch (storageError) {
+      console.error('Failed to persist session', storageError);
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
+
+  if (checking) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <ActivityIndicator size="large" color="#ec8627" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Enter Your Name</Text>
+        <Text style={styles.subtitle}>We only ask once—future changes live in your profile.</Text>
         <TextInput
           style={styles.input}
           placeholder="Your Name"
+          placeholderTextColor="#8a7260"
           value={name}
-          onChangeText={setName}
+          onChangeText={(text) => {
+            setName(text);
+            if (error) {
+              setError(null);
+            }
+          }}
+          autoFocus
         />
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save</Text>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <TouchableOpacity
+          style={[styles.saveButton, (!name.trim() || saving) && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving || !name.trim()}
+        >
+          <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Continue'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -64,36 +119,52 @@ const NameInputScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fcfaf8',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 8,
     color: '#181411',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#8a7260',
+    marginBottom: 32,
+    textAlign: 'center',
   },
   input: {
     width: '100%',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#f5f2f0',
+    borderRadius: 12,
+    marginBottom: 20,
     fontSize: 16,
     color: '#181411',
   },
+  errorText: {
+    color: '#00796B',
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+    fontSize: 14,
+  },
   saveButton: {
-    backgroundColor: '#ec8627',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
+    backgroundColor: '#00796B',
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 26,
+    width: '100%',
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   saveButtonText: {
     fontSize: 16,
