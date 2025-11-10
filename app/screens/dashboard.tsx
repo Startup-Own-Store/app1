@@ -16,7 +16,7 @@ import {
 // definitions for react-native-vector-icons are not installed.
 // Run this command in your terminal to fix it:
 // npm install @types/react-native-vector-icons --save-dev
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+const MaterialIcons: any = (require('react-native-vector-icons/MaterialIcons').default ?? require('react-native-vector-icons/MaterialIcons'));
 import supabase from '../../SupabaseClient';
 
 // Combine all screen elements into a single data array for FlatList
@@ -37,7 +37,7 @@ const VendorDashboardScreen = () => {
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) {
-            Alert.alert('Logout Error', error.message);
+        Alert.alert('Logout Error', error.message);
         }
     };
 

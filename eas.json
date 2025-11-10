@@ -6,7 +6,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "ndk": "23.1.7779620"
+      }
     },
     "preview": {
       "distribution": "internal"
@@ -15,9 +19,7 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
-        "ndk": {
-          "debugSymbols": true
-        }
+        "ndk": "23.1.7779620"
       }
     },
     "development-simulator": {

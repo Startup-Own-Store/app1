@@ -11,7 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+// import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import supabase from '../../SupabaseClient';
 
@@ -136,7 +136,7 @@ const AdminOrderDetailsScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.errorContainer}>
-          <MaterialIcons name="receipt" size={48} color="#ccc" />
+          {/* <MaterialIcons name="receipt" size={48} color="#ccc" /> */}
           <Text style={styles.errorText}>No accepted orders found</Text>
           <TouchableOpacity onPress={handleBack}>
             <Text>Go Back</Text>
@@ -164,7 +164,7 @@ const AdminOrderDetailsScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack}>
-            <MaterialIcons name="arrow-back" size={24} color="#1c140c" />
+            {/* <MaterialIcons name="arrow-back" size={24} color="#1c140c" /> */}
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Accepted Orders</Text>
           <View style={styles.headerSpacer} />

@@ -2,116 +2,91 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, SafeAreaView, Platform, StatusBar,
+  Alert, SafeAreaView, Platform, StatusBar, ScrollView,
 } from 'react-native';
 import supabase from '../../SupabaseClient';
 
-// Interface for the user data state object
-interface DeliveryUserCreation {
-  email: string;
-  password: string;
-  full_name?: string;
-  phone?: string;
-}
-
 const CreateDeliveryUserScreen = () => {
-  const [userData, setUserData] = useState<DeliveryUserCreation>({
-    email: '',
-    password: '',
-    full_name: '',
-    phone: ''
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleCreateUser = async () => {
-    const { email, password } = userData;
-    
     if (!email || !password) {
       return Alert.alert('Error', 'Email and password are required.');
     }
-
     setLoading(true);
 
     try {
-      // Invoke the Edge Function to create the delivery user
-      const { data, error } = await supabase.functions.invoke('create-delivery-user', {
+      // ✅ CHANGED: Call the edge function for delivery user creation
+      const { data, error } = await supabase.functions.invoke('quick-handler', {
         body: {
-          ...userData,
-          role: 'delivery' // Explicitly set the role
-        }
+          email,
+          password,
+          full_name: fullName,
+          phone,
+          role: 'delivery', // Changed role to 'delivery'
+        },
       });
 
-      if (error) throw error;
-
-      // Success handling
-      Alert.alert(
-        'Success', 
-        data.message || `Delivery user ${email} created successfully.`, // Use message from function
-        [{ text: 'OK', onPress: () => resetForm() }]
-      );
+      if (error) {
+        Alert.alert('Creation Failed', error.message);
+      } else {
+        Alert.alert('Success!', data.message);
+        // Clear the form
+        setEmail('');
+        setPassword('');
+        setFullName('');
+        setPhone('');
+      }
     } catch (err: any) {
-      // Error handling
-      Alert.alert(
-        'Creation Failed', 
-        err.message || 'An unexpected error occurred.'
-      );
+      Alert.alert('An Unexpected Error Occurred', err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setUserData({
-      email: '',
-      password: '',
-      full_name: '',
-      phone: ''
-    });
-  };
-
-  // Reusable function to update the state object
-  const updateUserData = (key: keyof DeliveryUserCreation, value: string) => {
-    setUserData(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Create New Delivery User</Text>
-        
+
+        <Text style={styles.label}>Email Address (Required)</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="Delivery User's Email" 
-          value={userData.email} 
-          onChangeText={(value) => updateUserData('email', value)}
+          placeholder="delivery@example.com" 
+          value={email} 
+          onChangeText={setEmail} 
           autoCapitalize="none" 
           keyboardType="email-address" 
         />
         
+        <Text style={styles.label}>Temporary Password (Required)</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="Set Temporary Password" 
-          value={userData.password} 
-          onChangeText={(value) => updateUserData('password', value)}
+          placeholder="Min. 8 characters" 
+          value={password} 
+          onChangeText={setPassword} 
           secureTextEntry 
         />
         
+        <Text style={styles.label}>Full Name (Optional)</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="Full Name (Optional)" 
-          value={userData.full_name} 
-          onChangeText={(value) => updateUserData('full_name', value)}
+          placeholder="John Doe" 
+          value={fullName} 
+          onChangeText={setFullName} 
         />
-        
+
+        <Text style={styles.label}>Phone Number (Optional)</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="Phone Number (Optional)" 
-          value={userData.phone} 
-          onChangeText={(value) => updateUserData('phone', value)}
-          keyboardType="phone-pad"
+          placeholder="+91..." 
+          value={phone} 
+          onChangeText={setPhone} 
+          keyboardType="phone-pad" 
         />
         
         <TouchableOpacity 
@@ -123,7 +98,7 @@ const CreateDeliveryUserScreen = () => {
             {loading ? 'Creating...' : 'Create Delivery User'}
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -135,7 +110,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 
   },
   container: { 
-    flex: 1, 
     justifyContent: 'center', 
     padding: 20 
   },
@@ -145,6 +119,12 @@ const styles = StyleSheet.create({
     textAlign: 'center', 
     marginBottom: 30, 
     color: '#333' 
+  },
+  label: { 
+    fontSize: 14, 
+    color: '#666', 
+    marginBottom: 5, 
+    marginLeft: 5 
   },
   input: { 
     backgroundColor: 'white', 

@@ -1,37 +1,54 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.google.gms:google-services:4.4.1'
-        classpath("com.android.tools.build:gradle:8.9.1")
-        classpath('com.facebook.react:react-native-gradle-plugin')
-        classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
-    }
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'com.google.gms:google-services:4.4.1'
+    classpath("com.android.tools.build:gradle:8.6.1")
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+  }
+}
+
+ext {
+  androidGradlePluginVersion = '8.6.1'
+  kotlinVersion = '2.1.0'
+  kspVersion = '2.1.0-1.0.29'
 }
 
 def reactNativeAndroidDir = new File(
-        providers.exec {
-            workingDir(rootDir)
-            commandLine("node", "--print", "require.resolve('react-native/package.json')")
-        }.standardOutput.asText.get().trim(),
-        "../android"
+  providers.exec {
+    workingDir(rootDir)
+    commandLine("node", "--print", "require.resolve('react-native/package.json')")
+  }.standardOutput.asText.get().trim(),
+  "../android"
 )
 
 allprojects {
-    repositories {
-        maven {
-            // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
-            url(reactNativeAndroidDir)
-        }
-
-        google()
-        mavenCentral()
-        maven { url 'https://www.jitpack.io' }
+  repositories {
+    maven {
+      // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+      url(reactNativeAndroidDir)
     }
+
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+    
+    // Add version resolution strategy to fix the FusedLocationProviderClient error
+    configurations.all {
+    resolutionStrategy {
+        force "com.google.android.gms:play-services-location:21.3.0"
+        force "com.google.android.gms:play-services-maps:19.0.0"
+        force "com.google.android.gms:play-services-base:18.5.0"
+        force "com.google.android.gms:play-services-tasks:18.2.0"
+        force "com.google.android.gms:play-services-basement:18.3.0"
+    }
+}
 }
 
 apply plugin: "expo-root-project"

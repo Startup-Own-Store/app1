@@ -7,6 +7,18 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import supabase from '../../SupabaseClient';
+import { Alert } from 'react-native';
+import { locationService } from './services/LocationService';
+
+const handleLogout = async () => {
+  locationService.stopLocationTracking();
+
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+  Alert.alert('Logout Error', error.message);
+  }
+};
 
 const AccountScreen = ({ onBack }: { onBack: () => void }) => {
   return (
@@ -103,7 +115,7 @@ const AccountScreen = ({ onBack }: { onBack: () => void }) => {
               <Text style={styles.menuArrow}>→</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.menuItem, styles.logoutItem]}>
+            <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
               <Text style={styles.menuIcon}>🚪</Text>
               <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
               <Text style={styles.menuArrow}>→</Text>
