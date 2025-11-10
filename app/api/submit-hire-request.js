@@ -18,6 +18,8 @@ if (supabaseUrl && supabaseServiceKey) {
   );
 }
 
+const COOLDOWN_MINUTES = Number.parseInt(process.env.HIRE_REQUEST_COOLDOWN_MINUTES || '5', 10) || 0;
+
 const sanitizeString = (value) => {
   if (typeof value !== 'string') {
     return undefined;
@@ -25,6 +27,22 @@ const sanitizeString = (value) => {
 
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const formatRemaining = (msRemaining) => {
+  if (msRemaining <= 0) {
+    return 'a few moments';
+  }
+
+  const totalSeconds = Math.ceil(msRemaining / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes > 0) {
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  }
+
+  return `${seconds}s`;
 };
 
 module.exports = async function submitHireRequest(req, res) {
@@ -85,7 +103,53 @@ module.exports = async function submitHireRequest(req, res) {
       job_description: sanitizeString(jobDescription) || null,
       image_urls: normalizedImages,
       status: 'pending',
+      created_at: new Date().toISOString(),
     };
+
+    if (!insertPayload.service_category) {
+      insertPayload.service_category = 'Other';
+    }
+
+    if (COOLDOWN_MINUTES > 0) {
+      const cooldownMilliseconds = COOLDOWN_MINUTES * 60 * 1000;
+      const cutoffIso = new Date(Date.now() - cooldownMilliseconds).toISOString();
+
+      const { data: recentSubmissions, error: recentError } = await supabaseClient
+        .from('user_hire_requests')
+        .select('id, created_at')
+        .eq('user_id', insertPayload.user_id)
+        .eq('service_category', insertPayload.service_category)
+        .gte('created_at', cutoffIso)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (recentError) {
+        console.error('❌ Failed to evaluate hire request cooldown:', recentError);
+        return res.status(500).json({
+          error: 'Failed to submit request',
+          details: 'Unable to validate submission cooldown. Please try again shortly.',
+        });
+      }
+
+      if (Array.isArray(recentSubmissions) && recentSubmissions.length > 0) {
+        const lastCreatedAt = recentSubmissions[0]?.created_at;
+        const lastTimestamp = lastCreatedAt ? Date.parse(lastCreatedAt) : NaN;
+
+        if (!Number.isNaN(lastTimestamp)) {
+          const elapsed = Date.now() - lastTimestamp;
+          const remaining = Math.max(0, cooldownMilliseconds - elapsed);
+
+          if (remaining > 0) {
+            return res.status(429).json({
+              error: 'Please wait',
+              details: `You recently submitted a request to hire a ${insertPayload.service_category}. Please wait ${formatRemaining(
+                remaining
+              )} before submitting another for the same service.`,
+            });
+          }
+        }
+      }
+    }
 
     const { data, error } = await supabaseClient
       .from('user_hire_requests')

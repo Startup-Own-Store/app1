@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -109,6 +109,7 @@ const HirePerson = () => {
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogMessage, setDialogMessage] = useState('');
   const [dialogVariant, setDialogVariant] = useState<'success' | 'error' | 'info'>('info');
+  const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
   const dialogActionRef = useRef<(() => void) | null>(null);
 
   useFocusEffect(
@@ -333,8 +334,32 @@ const HirePerson = () => {
           payload?.details ||
           payload?.message ||
           `Failed to submit request (status ${response.status}). Please try again.`;
-        console.error('Error submitting request:', payload);
-        showDialog('Error', message, 'error');
+        if (response.status === 429) {
+          console.warn('Hire request cooldown active:', payload);
+          const parsedSeconds = (() => {
+            const details = payload?.details || '';
+            const minutesMatch = /wait\s+(\d+)m\s*(\d+)?s?/i.exec(details);
+            if (minutesMatch) {
+              const minutes = Number.parseInt(minutesMatch[1] ?? '0', 10) || 0;
+              const seconds = Number.parseInt(minutesMatch[2] ?? '0', 10) || 0;
+              return minutes * 60 + seconds;
+            }
+            const secondsMatch = /wait\s+(\d+)\s*seconds?/i.exec(details);
+            if (secondsMatch) {
+              return Number.parseInt(secondsMatch[1] ?? '0', 10) || 0;
+            }
+            return 0;
+          })();
+
+          if (parsedSeconds > 0) {
+            setCooldowns(prev => ({ ...prev, [selectedService]: parsedSeconds }));
+          }
+
+          showDialog('Please wait', payload?.details || message, 'info');
+        } else {
+          console.error('Error submitting request:', payload);
+          showDialog('Error', message, 'error');
+        }
         return;
       }
 
@@ -361,6 +386,15 @@ const HirePerson = () => {
         console.warn('Failed to update cached session', sessionUpdateError);
       }
 
+      setCooldowns(prev => {
+        if (prev[selectedService] === undefined) {
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[selectedService];
+        return next;
+      });
+
       // Success
       showDialog(
         'Success!',
@@ -381,31 +415,72 @@ const HirePerson = () => {
   };
 
   // --- RENDER FUNCTIONS ---
-  const renderTopService = ({ item }: { item: typeof topServices[0] }) => (
-    <TouchableOpacity
-      style={[
-        styles.topServiceCard,
-        { width: Math.min(120, SCREEN_WIDTH * 0.28), height: Math.min(130, SCREEN_HEIGHT * 0.18) }
-      ]}
-      onPress={() => {
-        if (item.name === 'Consultancies') {
-          openServiceModal('Consultancy Services', true);
-        } else if (item.name === 'Other Needs') {
-          openServiceModal('Custom Needs', false, true);
-        } else {
-          openServiceModal(item.name);
-        }
-      }}
-    >
-      <View style={[
-        styles.topServiceIconContainer,
-        { width: Math.min(55, SCREEN_WIDTH * 0.14), height: Math.min(55, SCREEN_HEIGHT * 0.08) }
-      ]}>
-        <MaterialIcons name={item.icon} size={Math.min(28, SCREEN_WIDTH * 0.07)} color="#fff" />
-      </View>
-      <Text style={styles.topServiceText}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  useEffect(() => {
+    if (Object.keys(cooldowns).length === 0) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCooldowns(prev => {
+        const next: Record<string, number> = {};
+        let hasChanges = false;
+
+        Object.entries(prev).forEach(([service, seconds]) => {
+          if (seconds > 1) {
+            next[service] = seconds - 1;
+            hasChanges = true;
+          } else {
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? next : prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldowns]);
+
+  const formatCooldown = useCallback((seconds: number) => {
+    const minutesPart = Math.floor(seconds / 60);
+    const secondsPart = seconds % 60;
+    return `${String(minutesPart).padStart(2, '0')}:${String(secondsPart).padStart(2, '0')}`;
+  }, []);
+
+  const renderTopService = ({ item }: { item: typeof topServices[0] }) => {
+    const remaining = cooldowns[item.name];
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.topServiceCard,
+          { width: Math.min(120, SCREEN_WIDTH * 0.28), height: Math.min(130, SCREEN_HEIGHT * 0.18) }
+        ]}
+        onPress={() => {
+          if (item.name === 'Consultancies') {
+            openServiceModal('Consultancy Services', true);
+          } else if (item.name === 'Other Needs') {
+            openServiceModal('Custom Needs', false, true);
+          } else {
+            openServiceModal(item.name);
+          }
+        }}
+      >
+        <View style={[
+          styles.topServiceIconContainer,
+          { width: Math.min(55, SCREEN_WIDTH * 0.14), height: Math.min(55, SCREEN_HEIGHT * 0.08) }
+        ]}>
+          <MaterialIcons name={item.icon} size={Math.min(28, SCREEN_WIDTH * 0.07)} color="#fff" />
+        </View>
+        {typeof remaining === 'number' && remaining > 0 ? (
+          <Text style={[styles.cooldownTimer, { fontSize: Math.min(13, SCREEN_WIDTH * 0.032), marginTop: Math.min(6, SCREEN_HEIGHT * 0.008) }]}>
+            {formatCooldown(remaining)}
+          </Text>
+        ) : null}
+        <Text style={styles.topServiceText}>{item.name}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderConsultancyItem = ({ item }: { item: typeof consultancies[0] }) => (
     <TouchableOpacity
@@ -1271,6 +1346,11 @@ const styles = StyleSheet.create({
   topServiceText: {
     fontWeight: 'bold',
     color: COLORS.TEXT_PRIMARY,
+    textAlign: 'center',
+  },
+  cooldownTimer: {
+    fontWeight: '700',
+    color: COLORS.PRIMARY,
     textAlign: 'center',
   },
   serviceGridItem: {

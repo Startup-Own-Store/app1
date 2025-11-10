@@ -26,6 +26,7 @@ export default {
       eas: {
         projectId: "21a51883-465a-43d6-ae71-5328d4ef8818"
       },
+      devApiUrl: process.env.EXPO_PUBLIC_DEV_API_URL,
       prodApiUrl: process.env.EXPO_PUBLIC_PROD_API_URL,
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY

@@ -56,7 +56,7 @@ export const getOrCreateGuestUserId = async ({
         body: JSON.stringify(payload),
       });
 
-  const responsePayload = await response.json().catch(() => ({}));
+      const responsePayload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         const detail =
@@ -68,12 +68,19 @@ export const getOrCreateGuestUserId = async ({
           responsePayload?.message ||
           `Guest user registration failed with status ${response.status}`;
 
+        const serializedPayload =
+          responsePayload && typeof responsePayload === 'object' && Object.keys(responsePayload).length > 0
+            ? JSON.stringify(responsePayload)
+            : undefined;
+
         if (!isLastAttempt && response.status >= 500) {
           console.warn(`Guest user registration failed at ${baseUrl}: ${message}. Retrying with fallback endpoint.`);
           continue;
         }
 
-  lastFailure = new Error(detail ? `${message}: ${detail}` : message);
+        lastFailure = new Error(
+          detail ? `${message}: ${detail}` : serializedPayload ? `${message}: ${serializedPayload}` : message
+        );
         break;
       }
 

@@ -75,8 +75,11 @@ module.exports = async function registerGuestUser(req, res) {
     });
 
     if (createResult.error && normalizedPhone) {
-      const phoneError = createResult.error.message || '';
-      const duplicatePhone = phoneError.includes('duplicate key value') || phoneError.includes('users_phone_key');
+      const phoneError = (createResult.error.message || '').toLowerCase();
+      const duplicatePhone =
+        phoneError.includes('duplicate key value') ||
+        phoneError.includes('users_phone_key') ||
+        phoneError.includes('already registered');
       if (duplicatePhone) {
         console.warn('⚠️  Phone already in use, creating guest user without phone association');
         createResult = await supabaseClient.auth.admin.createUser({
