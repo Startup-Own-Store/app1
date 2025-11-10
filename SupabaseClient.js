@@ -1,7 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
+import Constants from 'expo-constants';
 
-const supabaseUrl = "https://ubadjmwfiujrrsqcliyt.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViYWRqbXdmaXVqcnJzcWNsaXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MDc1MjcsImV4cCI6MjA3MDk4MzUyN30.NhuZSMKrMJwZLiyOzVs-D5s_-rsh3kBGKamJILorBFY";
+const extra = {
+	...(Constants.manifest?.extra ?? {}),
+	...(Constants.expoConfig?.extra ?? {}),
+};
+
+const supabaseUrl = typeof extra.supabaseUrl === 'string' ? extra.supabaseUrl.trim() : '';
+const supabaseAnonKey = typeof extra.supabaseAnonKey === 'string' ? extra.supabaseAnonKey.trim() : '';
+
+if (!supabaseUrl || !supabaseAnonKey) {
+	console.warn('Supabase credentials missing from Expo config. Check app.config.js extra values.');
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
