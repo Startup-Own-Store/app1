@@ -56,9 +56,13 @@ export const getOrCreateGuestUserId = async ({
         body: JSON.stringify(payload),
       });
 
-      const responsePayload = await response.json().catch(() => ({}));
+  const responsePayload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        const detail =
+          typeof responsePayload?.details === 'string' && responsePayload.details.trim().length > 0
+            ? responsePayload.details.trim()
+            : undefined;
         const message =
           responsePayload?.error ||
           responsePayload?.message ||
@@ -69,7 +73,7 @@ export const getOrCreateGuestUserId = async ({
           continue;
         }
 
-        lastFailure = new Error(message);
+  lastFailure = new Error(detail ? `${message}: ${detail}` : message);
         break;
       }
 
