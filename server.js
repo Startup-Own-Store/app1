@@ -67,32 +67,12 @@ app.get('/', (req, res) => {
       { method: 'GET', path: '/', description: 'API info' },
       { method: 'POST', path: '/app/api/create-order', description: 'Create order' },
       { method: 'POST', path: '/app/api/sync-firebase-user', description: 'Sync Firebase user to Supabase' },
-      { method: 'POST', path: '/app/api/register-guest-user', description: 'Create or validate guest Supabase user' }
+      { method: 'POST', path: '/app/api/register-guest-user', description: 'Create or validate guest Supabase user' },
+      { method: 'POST', path: '/app/api/submit-hire-request', description: 'Submit hire request on behalf of guest' }
     ]
   });
 });
 
-// Show info page when someone tries to GET the sync endpoint
-app.get('/app/api/sync-firebase-user', (req, res) => {
-  res.status(200).json({
-    error: 'Method not allowed',
-    message: 'This endpoint only accepts POST requests',
-    usage: {
-      method: 'POST',
-      url: '/app/api/sync-firebase-user',
-      body: {
-        idToken: 'Firebase ID token (string)',
-        metadata: {
-          displayName: 'string',
-          email: 'string',
-          phoneNumber: 'string',
-          photoURL: 'string',
-          providers: ['array']
-        }
-      }
-    }
-  });
-});
 
 // Lazy load the route handlers to avoid module loading errors
 app.post('/app/api/create-order', (req, res) => {
@@ -142,6 +122,26 @@ app.post('/app/api/register-guest-user', async (req, res) => {
   }
 });
 
+app.get('/app/api/submit-hire-request', (req, res) => {
+  res.status(200).json({
+    error: 'Method not allowed',
+    message: 'Use POST /app/api/submit-hire-request to submit a hire request',
+  });
+});
+
+app.post('/app/api/submit-hire-request', async (req, res) => {
+  console.log('🛠️ Hire request submission received');
+  try {
+    const submitHireRequest = require('./app/api/submit-hire-request');
+    await submitHireRequest(req, res);
+  } catch (error) {
+    console.error('❌ Error in submit-hire-request handler:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+  }
+});
+
 // 404 handler - must be last
 app.use((req, res) => {
   console.log(`❌ 404 - Not found: ${req.method} ${req.path}`);
@@ -153,7 +153,9 @@ app.use((req, res) => {
       'GET /',
       'GET /health',
       'POST /app/api/create-order',
-      'POST /app/api/sync-firebase-user'
+      'POST /app/api/sync-firebase-user',
+      'POST /app/api/register-guest-user',
+      'POST /app/api/submit-hire-request'
     ]
   });
 });
@@ -173,7 +175,6 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Network URL: http://0.0.0.0:${PORT} (accessible from emulator via 10.0.2.2:${PORT})`);
   console.log(`Health check: http://localhost:${PORT}/health`);
   console.log(`API info: http://localhost:${PORT}/`);
-  console.log(`Sync endpoint: POST http://localhost:${PORT}/app/api/sync-firebase-user`);
   console.log('\n Waiting for requests...\n');
 });
 

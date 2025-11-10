@@ -60,6 +60,7 @@ const NameInputScreen: React.FC = () => {
         ['userName', trimmed],
         ['userSession', JSON.stringify(session)],
       ]);
+      await AsyncStorage.setItem('guestOnboarded', 'true');
 
       navigation.reset({
         index: 0,

@@ -1,10 +1,9 @@
 import 'react-native-url-polyfill/auto';
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StatusBar } from 'react-native';
+import React from 'react';
+import { View, StatusBar } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import SplashScreen from './app/UserScreens/SplashScreen';
@@ -22,7 +21,7 @@ import HelpSupportScreen from './app/UserScreens/HelpSupp';
 import NotificationsScreen from './app/UserScreens/Notifications';
 
 export type RootStackParamList = {
-  Splash: { nextRoute: 'Welcome' | 'MainTabs' | null };
+  Splash: undefined;
   Welcome: undefined;
   NameInput: undefined;
   MainTabs: undefined;
@@ -76,22 +75,6 @@ const MainTabs = () => (
 );
 
 export default function App() {
-  const [initialRoute, setInitialRoute] = useState<'Welcome' | 'MainTabs' | null>(null);
-
-  useEffect(() => {
-    const loadSession = async () => {
-      try {
-        const savedName = await AsyncStorage.getItem('userName');
-        setInitialRoute(savedName ? 'MainTabs' : 'Welcome');
-      } catch (error) {
-        console.error('Failed to load session', error);
-        setInitialRoute('Welcome');
-      }
-    };
-
-    loadSession();
-  }, []);
-
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar
@@ -119,7 +102,6 @@ export default function App() {
           <Stack.Screen
             name="Splash"
             component={SplashScreen}
-            initialParams={{ nextRoute: initialRoute }}
           />
 
           <Stack.Screen name="Welcome" component={WelcomeScreen} />

@@ -104,6 +104,7 @@ const ProfileTabScreen: React.FC = () => {
         ['userName', trimmed],
         ['userSession', JSON.stringify(session)],
       ]);
+      await AsyncStorage.setItem('guestOnboarded', 'true');
 
       setLastUpdated(timestamp);
       showDialog('Saved', 'Your profile has been updated.', 'success');

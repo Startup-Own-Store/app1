@@ -17,12 +17,12 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 const MaterialIcons: any = (require('react-native-vector-icons/MaterialIcons').default ?? require('react-native-vector-icons/MaterialIcons'));
-import supabase from '../../SupabaseClient';
 import AddEditAddress from './AddEditAddress';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getOrCreateGuestUserId } from '../utils/guestUser';
+import { getApiUrl, getProductionApiUrl } from '../utils/firebaseSupabaseSync';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -268,33 +268,73 @@ const HirePerson = () => {
       });
       setUserId(effectiveUserId);
 
-      // Prepare image URLs (for now, store as URIs - in production, upload to Supabase Storage)
       const imageUrls = selectedImages.map(img => img.uri);
 
-      // Insert hire request into database
-      const { data, error } = await supabase
-        .from('user_hire_requests')
-        .insert([
-          {
-            user_id: effectiveUserId,
-            service_name: selectedService,
-            service_category: selectedService,
-            is_consultancy: isConsultancy,
-            is_custom_request: isOtherNeeds,
-            full_name: fullName.trim(),
-            phone_number: phoneNumber.trim(),
-            address_type: selectedAddress.type,
-            address_line: selectedAddress.address,
-            job_description: jobDescription.trim() || null,
-            image_urls: imageUrls,
-            status: 'pending',
-          },
-        ])
-        .select();
+      const apiCandidates = Array.from(
+        new Set([getApiUrl(), getProductionApiUrl()])
+      );
 
-      if (error) {
-        console.error('Error submitting request:', error);
-        showDialog('Error', 'Failed to submit request. Please try again.', 'error');
+      let response: Response | undefined;
+      let payload: any = null;
+      let lastNetworkError: Error | null = null;
+
+      for (let index = 0; index < apiCandidates.length; index += 1) {
+        const baseUrl = apiCandidates[index];
+        const isLastAttempt = index === apiCandidates.length - 1;
+
+        try {
+          response = await fetch(`${baseUrl}/app/api/submit-hire-request`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: effectiveUserId,
+              serviceName: selectedService,
+              serviceCategory: selectedService,
+              isConsultancy,
+              isCustomRequest: isOtherNeeds,
+              fullName: fullName.trim(),
+              phoneNumber: phoneNumber.trim(),
+              addressType: selectedAddress?.type ?? null,
+              addressLine: selectedAddress?.address ?? null,
+              jobDescription: jobDescription.trim() || null,
+              imageUrls,
+            }),
+          });
+
+          payload = await response.json().catch(() => null);
+
+          if (!response.ok && !isLastAttempt && response.status >= 500) {
+            console.warn(`Hire request submission failed via ${baseUrl}: ${response.status}. Retrying with fallback endpoint.`);
+            continue;
+          }
+
+          break;
+        } catch (networkError: any) {
+          const reason = networkError?.message || 'Network request failed';
+          console.warn(`Hire request network error via ${baseUrl}: ${reason}`);
+          lastNetworkError = new Error(reason);
+          if (isLastAttempt) {
+            response = undefined;
+          }
+        }
+      }
+
+      if (!response) {
+        const reason = lastNetworkError?.message || 'Unable to reach OwnStore servers. Please check your internet connection or update the API URL.';
+        showDialog('Connection error', reason, 'error');
+        return;
+      }
+
+      if (!response.ok) {
+        const message =
+          payload?.error ||
+          payload?.details ||
+          payload?.message ||
+          `Failed to submit request (status ${response.status}). Please try again.`;
+        console.error('Error submitting request:', payload);
+        showDialog('Error', message, 'error');
         return;
       }
 
@@ -316,6 +356,7 @@ const HirePerson = () => {
           ['userName', fullName.trim()],
           ['userSession', JSON.stringify(nextSession)],
         ]);
+        await AsyncStorage.setItem('guestOnboarded', 'true');
       } catch (sessionUpdateError) {
         console.warn('Failed to update cached session', sessionUpdateError);
       }
