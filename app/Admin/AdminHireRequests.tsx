@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import supabase from '../../SupabaseClient';
 
 interface HireRequest {
@@ -41,6 +42,8 @@ const AdminHireRequests = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<HireRequest | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchHireRequests();
@@ -112,6 +115,115 @@ const AdminHireRequests = () => {
   const handleViewDetails = (request: HireRequest) => {
     setSelectedRequest(request);
     setModalVisible(true);
+  };
+
+  const clearSelection = () => {
+    setSelectedRequestIds([]);
+    setSelectionMode(false);
+  };
+
+  const startSelection = (requestId: string) => {
+    setSelectionMode(true);
+    setSelectedRequestIds([requestId]);
+  };
+
+  const toggleSelection = (requestId: string) => {
+    setSelectionMode(true);
+    setSelectedRequestIds(prev => {
+      const exists = prev.includes(requestId);
+      if (exists) {
+        return prev.filter(id => id !== requestId);
+      }
+      return [...prev, requestId];
+    });
+  };
+
+  const selectedCount = selectedRequestIds.length;
+
+  useEffect(() => {
+    if (selectionMode && selectedCount === 0) {
+      setSelectionMode(false);
+    }
+  }, [selectionMode, selectedCount]);
+
+  const deleteRequests = async (ids: string[]) => {
+    if (!ids.length) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_hire_requests')
+        .delete()
+        .in('id', ids);
+
+      if (error) {
+        throw error;
+      }
+
+      setRequests(prev => prev.filter(req => !ids.includes(req.id)));
+
+      if (selectedRequest && ids.includes(selectedRequest.id)) {
+        setModalVisible(false);
+        setSelectedRequest(null);
+      }
+
+      clearSelection();
+      Alert.alert('Deleted', ids.length === 1 ? 'Request deleted successfully.' : `${ids.length} requests deleted successfully.`);
+    } catch (error) {
+      console.error('Error deleting requests:', error);
+      Alert.alert('Error', 'Failed to delete request(s). Please try again.');
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (!selectedCount) {
+      clearSelection();
+      return;
+    }
+
+    Alert.alert(
+      'Delete Requests',
+      `Are you sure you want to delete ${selectedCount} request${selectedCount > 1 ? 's' : ''}?`,
+      [
+        { text: 'Cancel', style: 'cancel', onPress: clearSelection },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteRequests(selectedRequestIds),
+        },
+      ],
+    );
+  };
+
+  const handleDeleteSingle = (requestId: string) => {
+    Alert.alert(
+      'Delete Request',
+      'Are you sure you want to delete this request?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteRequests([requestId]),
+        },
+      ],
+    );
+  };
+
+  const handleCopyPhone = async (phoneNumber?: string) => {
+    if (!phoneNumber) {
+      Alert.alert('Unavailable', 'No phone number to copy.');
+      return;
+    }
+
+    try {
+      await Clipboard.setStringAsync(phoneNumber);
+      Alert.alert('Copied', 'Phone number copied to clipboard.');
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      Alert.alert('Error', 'Unable to copy phone number.');
+    }
   };
 
   const updateRequestStatus = async (requestId: string, newStatus: string) => {
@@ -200,11 +312,33 @@ const AdminHireRequests = () => {
     ).join(' ');
   };
 
-  const renderRequestCard = ({ item }: { item: HireRequest }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => handleViewDetails(item)}
-    >
+  const renderRequestCard = ({ item }: { item: HireRequest }) => {
+    const isSelected = selectedRequestIds.includes(item.id);
+
+    const handlePress = () => {
+      if (selectionMode) {
+        toggleSelection(item.id);
+        return;
+      }
+      handleViewDetails(item);
+    };
+
+    const handleLongPress = () => {
+      if (selectionMode) {
+        toggleSelection(item.id);
+      } else {
+        startSelection(item.id);
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, selectionMode && styles.cardSelectable, isSelected && styles.cardSelected]}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        delayLongPress={250}
+        activeOpacity={0.85}
+      >
       <View style={styles.cardHeader}>
         <View style={styles.serviceTypeContainer}>
           <MaterialIcons 
@@ -216,9 +350,19 @@ const AdminHireRequests = () => {
             {item.service_name || item.service_category}
           </Text>
         </View>
+        {selectionMode ? (
+          <View style={[styles.selectionBadge, isSelected ? styles.selectionBadgeSelected : styles.selectionBadgeUnselected]}>
+            <MaterialIcons
+              name={isSelected ? 'check' : 'radio-button-unchecked'}
+              size={16}
+              color={isSelected ? '#fff' : '#7f8c8d'}
+            />
+          </View>
+        ) : (
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
           <Text style={styles.statusText}>{getStatusDisplayText(item.status)}</Text>
         </View>
+        )}
       </View>
 
       <View style={styles.cardBody}>
@@ -259,10 +403,13 @@ const AdminHireRequests = () => {
 
       <View style={styles.cardFooter}>
         <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
-        <MaterialIcons name="chevron-right" size={20} color="#3498db" />
+        {!selectionMode && (
+          <MaterialIcons name="chevron-right" size={20} color="#3498db" />
+        )}
       </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const getServiceIcon = (serviceName: string) => {
     const service = serviceName?.toLowerCase();
@@ -358,7 +505,15 @@ const AdminHireRequests = () => {
                   </View>
                   <View style={styles.infoItem}>
                     <Text style={styles.infoItemLabel}>Phone</Text>
-                    <Text style={styles.infoItemValue}>{selectedRequest.phone_number}</Text>
+                    <View style={styles.infoItemValueRow}>
+                      <Text style={styles.infoItemValue}>{selectedRequest.phone_number}</Text>
+                      <TouchableOpacity
+                        style={styles.copyButton}
+                        onPress={() => handleCopyPhone(selectedRequest.phone_number)}
+                      >
+                        <MaterialIcons name="content-copy" size={16} color="#2980b9" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   <View style={styles.infoItem}>
                     <Text style={styles.infoItemLabel}>User ID</Text>
@@ -443,12 +598,22 @@ const AdminHireRequests = () => {
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.closeButton]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Close</Text>
-              </TouchableOpacity>
+              <View style={styles.modalFooterRow}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.deleteButton]}
+                  onPress={() => handleDeleteSingle(selectedRequest.id)}
+                >
+                  <MaterialIcons name="delete" size={18} color="#fff" style={styles.modalButtonIcon} />
+                  <Text style={styles.modalButtonText}>Delete Request</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.closeButton]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <MaterialIcons name="close" size={18} color="#fff" style={styles.modalButtonIcon} />
+                  <Text style={styles.modalButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -468,16 +633,28 @@ const AdminHireRequests = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => (selectionMode ? clearSelection() : navigation.goBack())}>
           <MaterialIcons name="arrow-back" size={28} color="#2c3e50" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Hire Requests</Text>
           <Text style={styles.headerSubtitle}>{requests.length} total requests</Text>
         </View>
-        <TouchableOpacity onPress={fetchHireRequests}>
-          <MaterialIcons name="refresh" size={28} color="#2c3e50" />
-        </TouchableOpacity>
+        <View style={styles.headerRightSlot}>
+          {selectionMode && (
+            <TouchableOpacity
+              onPress={handleDeleteSelected}
+              disabled={!selectedCount}
+              style={styles.headerDeleteButton}
+            >
+              <MaterialIcons
+                name="delete"
+                size={26}
+                color={selectedCount ? '#e74c3c' : '#bdc3c7'}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {requests.length === 0 ? (
@@ -566,6 +743,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  cardSelectable: {
+    borderWidth: 1,
+    borderColor: '#d6e4f0',
+  },
+  cardSelected: {
+    borderColor: '#2980b9',
+    backgroundColor: '#ecf5ff',
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -588,6 +773,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+  },
+  selectionBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d0d6dc',
+  },
+  selectionBadgeSelected: {
+    backgroundColor: '#2980b9',
+    borderColor: '#2980b9',
+  },
+  selectionBadgeUnselected: {
+    backgroundColor: '#fff',
   },
   statusText: {
     color: '#fff',
@@ -791,6 +990,16 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     fontWeight: '600',
   },
+  infoItemValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  copyButton: {
+    padding: 6,
+    borderRadius: 16,
+    backgroundColor: '#eaf2fb',
+  },
   userId: {
     fontSize: 10,
     fontFamily: 'monospace',
@@ -872,18 +1081,39 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#ecf0f1',
   },
+  modalFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   modalButton: {
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   closeButton: {
     backgroundColor: '#3498db',
+  },
+  deleteButton: {
+    backgroundColor: '#e74c3c',
   },
   modalButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalButtonIcon: {
+    marginRight: 4,
+  },
+  headerRightSlot: {
+    minWidth: 28,
+    alignItems: 'flex-end',
+  },
+  headerDeleteButton: {
+    padding: 4,
   },
 });
 

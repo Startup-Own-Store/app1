@@ -77,7 +77,6 @@ const NameInputScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Enter Your Name</Text>
-        <Text style={styles.subtitle}>We only ask once—future changes live in your profile.</Text>
         <TextInput
           style={styles.input}
           placeholder="Your Name"

@@ -240,6 +240,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     marginBottom: 16,
+    color: '#000000',
   },
   saveButton: {
     backgroundColor: '#00796B',

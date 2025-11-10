@@ -22,11 +22,11 @@
           }
         },
         {
-          "client_id": "1054963152708-ffslo7m6nbpfcdr3rnqttd0cdboa0in4.apps.googleusercontent.com",
+          "client_id": "1054963152708-rsrimlrf73nkbql1a1o5hng3emt4l9gm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.ajay.ownstoredemo",
-            "certificate_hash": "576cfd369eb61060363371a71cff57033f0d0fdf"
+            "certificate_hash": "5298bded28be8b0645e8a435f3bb52f28ac88210"
           }
         },
         {
@@ -35,14 +35,6 @@
           "android_info": {
             "package_name": "com.ajay.ownstoredemo",
             "certificate_hash": "100aa0d50feb9c567b776617e4659d59950f1b7b"
-          }
-        },
-        {
-          "client_id": "1054963152708-uc0irq1b1b171n08edanqgjmmq6d9rtu.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.ajay.ownstoredemo",
-            "certificate_hash": "facf34e8be4117d4d7f176635231dcc6a9abc4dd"
           }
         },
         {

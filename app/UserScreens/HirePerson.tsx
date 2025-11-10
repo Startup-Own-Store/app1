@@ -112,46 +112,49 @@ const HirePerson = () => {
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
   const dialogActionRef = useRef<(() => void) | null>(null);
 
+  const hydrateSession = useCallback(async () => {
+    try {
+      const storedSession = await AsyncStorage.getItem('userSession');
+      if (storedSession) {
+        const parsed = JSON.parse(storedSession);
+        const baseSession = parsed && typeof parsed === 'object' ? parsed : {};
+        if (baseSession?.id) {
+          setUserId(baseSession.id);
+        }
+        if (baseSession?.name) {
+          setFullName(baseSession.name);
+        }
+        if (baseSession?.phone) {
+          setPhoneNumber(baseSession.phone);
+        }
+      }
+
+      const storedName = await AsyncStorage.getItem('userName');
+      if (storedName) {
+        setFullName(storedName);
+      }
+    } catch (sessionError) {
+      console.error('Failed to hydrate session', sessionError);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
+      hydrateSession();
+
       const onBack = () => {
         BackHandler.exitApp();
         return true;
       };
 
-  const subscription = BackHandler.addEventListener('hardwareBackPress', onBack);
-  return () => subscription.remove();
-    }, [])
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBack);
+      return () => subscription.remove();
+    }, [hydrateSession])
   );
 
   useEffect(() => {
-    const hydrateSession = async () => {
-      try {
-        const storedSession = await AsyncStorage.getItem('userSession');
-        if (storedSession) {
-          const parsed = JSON.parse(storedSession);
-          const baseSession = parsed && typeof parsed === 'object' ? parsed : {};
-          if (baseSession?.id) {
-            setUserId(baseSession.id);
-          }
-          if (baseSession?.name) {
-            setFullName(baseSession.name);
-          }
-          if (baseSession?.phone) {
-            setPhoneNumber(baseSession.phone);
-          }
-        }
-        const storedName = await AsyncStorage.getItem('userName');
-        if (storedName) {
-          setFullName((prev) => prev || storedName);
-        }
-      } catch (sessionError) {
-        console.error('Failed to hydrate session', sessionError);
-      }
-    };
-
     hydrateSession();
-  }, []);
+  }, [hydrateSession]);
 
   const openServiceModal = (serviceName: string, isConsult: boolean = false, isOther: boolean = false) => {
     setSelectedService(serviceName);
