@@ -53,7 +53,7 @@ android {
         applicationId 'com.ajay.ownstoredemo'
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 22
+        versionCode 23
         versionName "1.0.0"
         manifestPlaceholders = [
             appAuthRedirectScheme: 'com.ajay.ownstoredemo'
